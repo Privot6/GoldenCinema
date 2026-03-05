@@ -40,6 +40,11 @@ Minimalna wersja systemu (Minimum Viable Product) będzie zawierać podstawowe f
 * Rezerwacja wybranych miejsc
 * Statusy rezerwacji:
 
+  * NEW
+  * CONFIRMED
+  * CANCELLED
+  * EXPIRED
+
 
 * Panel pracownika:
 
