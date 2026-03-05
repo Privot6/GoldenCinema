@@ -34,17 +34,21 @@ Rezerwacje są często rozproszone (telefon, kasa, zewnętrzne strony). Brakuje 
 Minimalna wersja systemu (Minimum Viable Product) będzie zawierać podstawowe funkcjonalności umożliwiające korzystanie z systemu rezerwacji:
 
 * Rejestracja i logowanie użytkownika (JWT)
+
 * Przegląd repertuaru: lista filmów i seansów
+
 * Wyświetlanie szczegółów seansu
+
 * Widok sali z mapą miejsc (wolne / zajęte)
+
 * Rezerwacja wybranych miejsc
+
 * Statusy rezerwacji:
 
   * NEW
   * CONFIRMED
   * CANCELLED
   * EXPIRED
-
 
 * Panel pracownika:
 
@@ -61,3 +65,63 @@ Auth: JWT
 Kontenery: Docker Compose (backend + DB)
 
 Raporty: generowanie PDF po stronie backendu
+
+## Strategia branchowania
+
+W projekcie stosujemy prostą strategię branchowania opartą na modelu zbliżonym do GitFlow.
+
+### Główne gałęzie
+
+**main**
+Stabilna wersja projektu. Zawiera tylko sprawdzony kod gotowy do prezentacji lub wydania.
+
+**develop**
+Gałąź integracyjna, na której łączone są nowe funkcjonalności. Jest główną gałęzią do bieżącego rozwoju projektu.
+
+### Gałęzie funkcjonalne
+
+Nowe funkcjonalności tworzone są w osobnych gałęziach tworzonych z `develop`.
+
+Format nazwy:
+
+```
+feature/nazwa-funkcji
+```
+
+Przykłady:
+
+```
+feature/auth-login
+feature/seat-reservation
+feature/showtimes-list
+```
+
+Po zakończeniu pracy gałąź `feature` jest łączona z `develop` poprzez Pull Request.
+
+### Poprawki błędów
+
+Drobne poprawki błędów tworzone są jako:
+
+```
+hotfix/nazwa-poprawki
+```
+
+Przykłady:
+
+```
+hotfix/reservation-validation
+hotfix/login-error
+```
+
+Hotfixy mogą być łączone z `develop`, a w razie potrzeby również z `main`.
+
+### Workflow pracy
+
+1. Tworzenie gałęzi `feature` z `develop`
+2. Implementacja funkcjonalności
+3. Commit zmian zgodnie z przyjętą konwencją commitów
+4. Utworzenie Pull Request do `develop`
+5. Code review
+6. Merge do `develop`
+
+Gałąź `main` aktualizowana jest tylko stabilnymi wersjami projektu.
