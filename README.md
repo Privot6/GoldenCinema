@@ -125,3 +125,17 @@ Hotfixy mogą być łączone z `develop`, a w razie potrzeby również z `main`.
 6. Merge do `develop`
 
 Gałąź `main` aktualizowana jest tylko stabilnymi wersjami projektu.
+
+## Struktura projektu
+
+Przykładowa struktura repozytorium GoldenCinema (na start):
+
+/GoldenCinema
+├── backend/           # kod backendu (Spring Boot)
+├── mobile/            # aplikacja Android (Kotlin)
+├── docs/              # dokumentacja, diagramy, raporty
+├── docker-compose.yml # konfiguracja kontenerów
+└── README.md          # opis projektu
+
+Ta struktura pozwala na jasny podział kodu i dokumentacji oraz przygotowuje repozytorium do pracy zespołowej.
+
