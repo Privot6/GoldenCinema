@@ -29,6 +29,18 @@ Rezerwacje są często rozproszone (telefon, kasa, zewnętrzne strony). Brakuje 
 **EMPLOYEE** – obsługuje rezerwacje (potwierdzanie/anulowanie)
 **ADMIN** – zarządza salami, seansami, filmami, cenami i raportami
 
+## MVP
+
+Minimalna wersja systemu (Minimum Viable Product) będzie zawierać podstawowe funkcjonalności umożliwiające korzystanie z systemu rezerwacji:
+
+* Rejestracja i logowanie użytkownika (JWT)
+* Przegląd repertuaru: lista filmów i seansów
+* Wyświetlanie szczegółów seansu
+* Widok sali z mapą miejsc (wolne / zajęte)
+* Rezerwacja wybranych miejsc
+* Statusy rezerwacji:
+
+
 * Panel pracownika:
 
   * lista rezerwacji
