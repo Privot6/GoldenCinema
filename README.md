@@ -1,29 +1,41 @@
+# GoldenCinema – system rezerwacji miejsc w kinie
 
-GoldenCinema – system rezerwacji miejsc w kinie
-
-Opis
+## Opis
 
 GoldenCinema to aplikacja mobilna umożliwiająca użytkownikom przegląd repertuaru kina, wybór seansu oraz rezerwację konkretnych miejsc na sali. System uwzględnia wiele sal i stały układ miejsc. Pracownicy kina mogą zarządzać rezerwacjami (potwierdzać/anulować), a administrator zarządza repertuarem i salami.
 
-Problem
+## Wizja projektu
+
+Celem projektu GoldenCinema jest stworzenie prostego i wygodnego systemu rezerwacji miejsc w kinie dostępnego z poziomu aplikacji mobilnej. System ma umożliwić użytkownikom szybkie sprawdzanie repertuaru, wybór konkretnych miejsc na sali oraz zarządzanie rezerwacjami.
+
+Dodatkowo aplikacja ma usprawnić pracę obsługi kina poprzez panel do zarządzania rezerwacjami oraz umożliwić administratorowi kontrolę nad repertuarem, salami i cenami biletów.
+
+## Problem
 
 Rezerwacje są często rozproszone (telefon, kasa, zewnętrzne strony). Brakuje prostego systemu, który:
-pokazuje dostępność miejsc w czasie rzeczywistym,
-porządkuje statusy rezerwacji.
 
-Grupa docelowa
+* pokazuje dostępność miejsc w czasie rzeczywistym,
+* porządkuje statusy rezerwacji.
 
-Klienci kina
-Pracownicy kina
-Manager/Admin
+## Grupa docelowa
 
-Role
+* Klienci kina
+* Pracownicy kina
+* Manager/Admin
 
-CLIENT – rezerwuje miejsca i przegląda swoje rezerwacje
-EMPLOYEE – obsługuje rezerwacje (potwierdzanie/anulowanie)
-ADMIN – zarządza salami, seansami, filmami, cenami i raportami
+## Role
 
-Stos technologiczny
+**CLIENT** – rezerwuje miejsca i przegląda swoje rezerwacje
+**EMPLOYEE** – obsługuje rezerwacje (potwierdzanie/anulowanie)
+**ADMIN** – zarządza salami, seansami, filmami, cenami i raportami
+
+* Panel pracownika:
+
+  * lista rezerwacji
+  * potwierdzanie rezerwacji
+  * anulowanie rezerwacji
+
+## Stos technologiczny
 
 Android: Kotlin
 Backend: Java + Spring Boot (REST API)
