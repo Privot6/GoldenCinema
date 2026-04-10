@@ -7,6 +7,7 @@ import com.goldencinema.backend.exception.MovieNotFoundException;
 import com.goldencinema.backend.repository.MovieRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,12 +20,20 @@ public class MovieService {
     }
 
     public MovieResponse createMovie(CreateMovieRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+
         Movie movie = new Movie();
         movie.setTitle(request.title());
         movie.setDescription(request.description());
         movie.setDurationMinutes(request.durationMinutes());
-        movie.setGenre(request.genre());
         movie.setAgeRating(request.ageRating());
+        movie.setLanguage(request.language());
+        movie.setSubtitles(request.subtitles());
+        movie.setGenre(request.genre());
+        movie.setPosterUrl(request.posterUrl());
+        movie.setIsActive(true);
+        movie.setCreatedAt(now);
+        movie.setUpdatedAt(now);
 
         Movie savedMovie = movieRepository.save(movie);
 
@@ -51,8 +60,14 @@ public class MovieService {
                 movie.getTitle(),
                 movie.getDescription(),
                 movie.getDurationMinutes(),
+                movie.getAgeRating(),
+                movie.getLanguage(),
+                movie.getSubtitles(),
                 movie.getGenre(),
-                movie.getAgeRating()
+                movie.getPosterUrl(),
+                movie.getIsActive(),
+                movie.getCreatedAt(),
+                movie.getUpdatedAt()
         );
     }
 }
