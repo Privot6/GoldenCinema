@@ -1,3 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">GoldenCinema</string>
+    <string name="login_title">Logowanie</string>
+    <string name="register_title">Rejestracja</string>
+    <string name="username">Nazwa Użytkownika</string>
+    <string name="username_label">Nazwa użytkownika</string>
+    <string name="email_label">Adres E-mail</string>
+    <string name="password_label">Hasło</string>
+    <string name="confirm_password_label">Powtórz Hasło</string>
+    <string name="login_button">ZALOGUJ</string>
+    <string name="register_button">ZAREJESTRUJ</string>
+    <string name="no_account_link">Nie masz konta? Zarejestruj się</string>
+    <string name="has_account_link">Masz już konto? Zaloguj się</string>
+    <string name="repertuar_title">Repertuar</string>
+    <string name="reservation_title">Rezerwacja</string>
+    <string name="seat_selection_title">Wybór Miejsc</string>
+    <string name="my_reservations_title">Moje Rezerwacje</string>
+    <string name="continue_button">DALEJ</string>
+
+    <string name="my_reservations_empty">Nie masz jeszcze żadnych rezerwacji.</string>
+    <string name="ticket_seat_label">Miejsce:</string>
+    <string name="ticket_hall_label">Sala:</string>
+    <string name="ticket_qr_help">Pokaż ten kod przy wejściu na salę</string>
+
+    <string name="buy_ticket_button">KUP BILET</string>
+    <string name="day_today">Dzisiaj</string>
+    <string name="day_tomorrow">Jutro</string>
+
+    <string name="choose_date">Wybierz Datę</string>
+    <string name="choose_time">Wybierz Godzinę</string>
+
+    <string name="seat_screen">EKRAN</string>
+    <string name="seat_free">Wolne</string>
+    <string name="seat_taken">Zajęte</string>
+    <string name="seat_selected">Wybrane</string>
+    <string name="ticket_count">Bilety:</string>
+    <string name="total_price">Razem:</string>
+    <string name="reserve_button">Zarezerwuj</string>
 </resources>

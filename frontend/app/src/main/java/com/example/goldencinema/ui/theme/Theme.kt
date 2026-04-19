@@ -36,7 +36,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun GoldenCinemaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
+    // Dynamiczne kolory są dostępne na Androidzie 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
