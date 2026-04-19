@@ -50,7 +50,7 @@ fun MyReservationsScreen() {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CinemaGold)
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color(0xFF121212))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF121212))
             )
         },
         containerColor = Color(0xFF121212)
