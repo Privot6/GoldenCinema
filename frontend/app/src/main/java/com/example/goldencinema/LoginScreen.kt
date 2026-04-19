@@ -1,4 +1,4 @@
-package com.example.goldencinema // Nie zmieniać
+﻿package com.example.goldencinema // Nie zmieniać
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,10 +16,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.goldencinema.ui.theme.CinemaGold
+import com.example.goldencinema.ui.theme.DarkBackground
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.example.goldencinema.R
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.clickable
 @Composable
@@ -31,7 +34,7 @@ fun LoginScreen() {
     // Surface to nasze główne tło - jednolite i ciemne
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF121212) // Czysta czerń/bardzo ciemny szary
+        color = DarkBackground // Czysta czerń/bardzo ciemny szary
     ) {
         Column(
             modifier = Modifier
@@ -42,7 +45,7 @@ fun LoginScreen() {
         ) {
             // 1. LOGO / NAZWA KINA
             Text(
-                text = "GoldenCinema",
+                text = stringResource(R.string.app_name),
                 style = TextStyle(
                     color = CinemaGold,
                     fontSize = 36.sp,
@@ -53,7 +56,7 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(48.dp))
 
             Text(
-                text = "Logowanie",
+                text = stringResource(R.string.login_title),
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold
@@ -65,7 +68,7 @@ fun LoginScreen() {
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Nazwa użytkownika", color = Color.Gray) },
+                label = { Text(stringResource(R.string.username_label), color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = CinemaGold) },
                 colors = OutlinedTextFieldDefaults.colors(
@@ -82,7 +85,7 @@ fun LoginScreen() {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Hasło", color = Color.Gray) },
+                label = { Text(stringResource(R.string.password_label), color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(), // Zamienia tekst na kropki
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = CinemaGold) },
@@ -105,14 +108,14 @@ fun LoginScreen() {
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = CinemaGold)
             ) {
-                Text("ZALOGUJ", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.login_button), color = Color.Black, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // 5. LINKI POMOCNICZE
             Text(
-                text = "Nie masz konta? Zarejestruj się",
+                text = stringResource(R.string.no_account_link),
                 color = Color.LightGray,
                 fontSize = 14.sp,
                 modifier = Modifier.clickable { /* Tu będzie przejście do rejestracji */ }
