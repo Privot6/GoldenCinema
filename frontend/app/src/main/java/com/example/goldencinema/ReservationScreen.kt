@@ -1,4 +1,4 @@
-package com.example.goldencinema
+﻿package com.example.goldencinema
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,13 +7,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.goldencinema.R
 import com.example.goldencinema.ui.theme.CinemaGold
+import com.example.goldencinema.ui.theme.DarkBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,16 +27,16 @@ fun ReservationScreen() {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Rezerwacja", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.reservation_title), color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { /* Powrót */ }) {
+                    IconButton(onClick = { /* PowrĂłt */ }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CinemaGold)
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color(0xFF121212))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         },
-        containerColor = Color(0xFF121212)
+        containerColor = DarkBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -40,72 +44,34 @@ fun ReservationScreen() {
                 .padding(padding)
                 .padding(24.dp)
         ) {
-            // 1. GÓRNA SEKCJA: PLAKAT I TYTUŁ
-            Row(modifier = Modifier.fillMaxWidth()) {
-                // Miejsce na plakat
-                Box(
-                    modifier = Modifier
-                        .size(width = 100.dp, height = 140.dp)
-                        .background(Color.DarkGray, RoundedCornerShape(8.dp))
-                )
+            // 1. NAGŁÓWEK Z TYTUŁEM FILMU I PRZYCISKIEM POWROTU
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Przycisk powrotu
+                IconButton(onClick = { /* TODO: Powrót do poprzedniego ekranu */ }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CinemaGold)
+                }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
+                Spacer(modifier = Modifier.width(8.dp))
                 Column {
-                    Text(
-                        text = "Dune: Part Two",
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Akcja, Sci-Fi | 166 min",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
+                    Text(text = stringResource(R.string.reservation_title), color = Color.Gray, fontSize = 14.sp)
+                    Text(text = "Diuna: Część Druga", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = Color.DarkGray, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. SZCZEGÓŁY REZERWACJI
-            ReservationDetail(label = "Godzina:", value = "17:30")
-            ReservationDetail(label = "Rząd:", value = "7, Miejsca: 8, 9")
-
+            // 2. WYBÓR DATY
+            Text(text = stringResource(R.string.choose_date), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Cena (obliczona)
-            Row {
-                Text("Cena: ", color = Color.White, fontSize = 16.sp)
-                Text("2 x 25 zł = ", color = CinemaGold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text("50 zł", color = CinemaGold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = Color.DarkGray, thickness = 1.dp)
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 3. OPIS FILMU (Zamiast imienia i nazwiska)
-            Text("Opis filmu", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Paul Atryda jednoczy się z Chani i Fremenami, szukając zemsty na spiskowcach, którzy zniszczyli jego rodzinę. Staje przed wyborem między miłością a losem wszechświata.",
-                color = Color.Gray,
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 4. POLE E-MAIL
-            Text("E-mail", color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
+            // Przykładowy widok wyboru daty (można zastąpić własnym komponentem)
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = "2023-10-10",
+                onValueChange = {},
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("twoj@email.com", color = Color.DarkGray) },
+                placeholder = { Text("Wybierz datę", color = Color.DarkGray) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = CinemaGold,
                     unfocusedBorderColor = Color.Gray,
@@ -117,28 +83,43 @@ fun ReservationScreen() {
                 shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.weight(1f)) // Pcha przycisk na dół
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // 5. PRZYCISK ZATWIERDŹ
+            // 3. WYBÓR GODZINY
+            Text(text = stringResource(R.string.choose_time), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Przykładowy widok wyboru godziny (można zastąpić własnym komponentem)
+            OutlinedTextField(
+                value = "17:30",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Wybierz godzinę", color = Color.DarkGray) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = CinemaGold,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    unfocusedContainerColor = Color(0xFF1E1E1E),
+                    focusedContainerColor = Color(0xFF1E1E1E)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 4. PRZYCISK "DALEJ" NA SAMYM DOLE
             Button(
-                onClick = { /* Finalizacja */ },
+                onClick = { /* TODO: Przejście do wyboru miejsc */ },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = CinemaGold),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("ZATWIERDŹ REZERWACJĘ", color = Color.Black, fontWeight = FontWeight.ExtraBold)
+                Text(text = stringResource(R.string.continue_button), color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
-    }
-}
-
-@Composable
-fun ReservationDetail(label: String, value: String) {
-    Row(modifier = Modifier.padding(bottom = 8.dp)) {
-        Text(text = "$label ", color = Color.White, fontSize = 16.sp)
-        Text(text = value, color = CinemaGold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
 

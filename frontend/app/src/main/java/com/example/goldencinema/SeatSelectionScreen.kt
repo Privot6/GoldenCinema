@@ -1,4 +1,4 @@
-package com.example.goldencinema
+﻿package com.example.goldencinema
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,11 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.goldencinema.R
 import com.example.goldencinema.ui.theme.CinemaGold
+import com.example.goldencinema.ui.theme.DarkBackground
 
 enum class SeatStatus {
     Available, // Zielony
@@ -34,16 +37,16 @@ data class Seat(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeatSelectionScreen() {
-    // 1. Logika wyboru miejsc (Przykładowe dane: 8 rzędów po 10 miejsc)
+    // 1. Logika wyboru miejsc (PrzykĹ‚adowe dane: 8 rzÄ™dĂłw po 10 miejsc)
     val totalRows = 8
     val totalCols = 10
 
-    // Lista miejsc w stanie "remember", żeby Compose wiedział, kiedy przerysować ekran
+    // Lista miejsc w stanie "remember", ĹĽeby Compose wiedziaĹ‚, kiedy przerysowaÄ‡ ekran
     val seats = remember {
         mutableStateListOf<Seat>().apply {
             for (r in 1..totalRows) {
                 for (c in 1..totalCols) {
-                    // Losujemy kilka zajętych miejsc dla realizmu
+                    // Losujemy kilka zajÄ™tych miejsc dla realizmu
                     val initialStatus = if ((r+c) % 7 == 0) SeatStatus.Occupied else SeatStatus.Available
                     add(Seat(r, c, initialStatus))
                 }
@@ -54,14 +57,9 @@ fun SeatSelectionScreen() {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Wybór Miejsc", color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Dune: Part Two | 17:30", color = Color.Gray, fontSize = 12.sp)
-                    }
-                },
+                title = { Text(stringResource(R.string.seat_selection_title), color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { /* Tu będzie powrót do repertuaru */ }) {
+                    IconButton(onClick = { /* Tu bÄ™dzie powrĂłt do repertuaru */ }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Cofnij",
@@ -69,10 +67,10 @@ fun SeatSelectionScreen() {
                         )
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color(0xFF121212))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
             )
         },
-        containerColor = Color(0xFF121212)
+        containerColor = DarkBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -81,20 +79,20 @@ fun SeatSelectionScreen() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 2. EKRAN (Trapez na górze)
+            // 1. EKRAN KINOWY
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
+                    .fillMaxWidth()
                     .height(40.dp)
-                    .background(Color.DarkGray, RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp)),
+                    .background(Color.DarkGray, RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("EKRAN", color = Color.LightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.seat_screen), color = Color.LightGray, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // 3. SIATKA MIEJSC
+            // 2. SIATKA MIEJSC
             Box(modifier = Modifier.weight(1f)) {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(totalCols),
@@ -105,7 +103,7 @@ fun SeatSelectionScreen() {
                     items(seats.size) { index ->
                         val seat = seats[index]
 
-                        // Kolor fotela zależny od statusu
+                        // Kolor fotela zaleĹĽny od statusu
                         val color = when (seat.status) {
                             SeatStatus.Available -> Color(0xFF4CAF50) // Zielony
                             SeatStatus.Occupied -> Color(0xFFE53935)  // Czerwony
@@ -117,7 +115,7 @@ fun SeatSelectionScreen() {
                                 .size(24.dp)
                                 .background(color, RoundedCornerShape(4.dp))
                                 .clickable(enabled = seat.status != SeatStatus.Occupied) {
-                                    // Przełączanie statusu: Available <-> Selected
+                                    // PrzeĹ‚Ä…czanie statusu: Available <-> Selected
                                     seats[index] = seat.copy(
                                         status = if (seat.status == SeatStatus.Selected) SeatStatus.Available else SeatStatus.Selected
                                     )
@@ -127,38 +125,48 @@ fun SeatSelectionScreen() {
                 }
             }
 
-            // 4. LEGENDA
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 3. LEGENDA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                LegendItem("Wolne", Color(0xFF4CAF50))
-                LegendItem("Zajęte", Color(0xFFE53935))
-                LegendItem("Twój wybór", Color(0xFF2196F3))
+                LegendItem(color = Color.DarkGray, label = stringResource(R.string.seat_free))
+                LegendItem(color = Color.Red.copy(alpha = 0.7f), label = stringResource(R.string.seat_taken))
+                LegendItem(color = CinemaGold, label = stringResource(R.string.seat_selected))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(thickness = 1.dp, color = Color.DarkGray)
+            HorizontalDivider(color = Color.DarkGray)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 5. INFO O WYBORZE I PRZYCISK
-            val selectedSeats = seats.filter { it.status == SeatStatus.Selected }
-            Text(
-                text = if (selectedSeats.isEmpty()) "Wybierz miejsce"
-                else "Rząd ${selectedSeats.first().row}, Miejsca ${selectedSeats.joinToString { it.column.toString() }}",
-                color = Color.White,
-                fontSize = 18.sp
-            )
+            // 4. PODSUMOWANIE I PRZYCISK
+            val selectedCount = seats.count { it.status == SeatStatus.Selected }
+            val totalPrice = selectedCount * 25 // 25 PLN za bilet (przykładowo)
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = { /* Dalej do podsumowania */ },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CinemaGold),
-                shape = RoundedCornerShape(12.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("DALEJ", color = Color.Black, fontWeight = FontWeight.Bold)
+                Column {
+                    Text(text = "${stringResource(R.string.ticket_count)} $selectedCount", color = Color.Gray, fontSize = 14.sp)
+                    Text(text = "${stringResource(R.string.total_price)} $totalPrice PLN", color = CinemaGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = { /* TODO: Zapisz rezerwację */ },
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CinemaGold,
+                        disabledContainerColor = Color.DarkGray
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(stringResource(R.string.reserve_button), color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
         }
     }

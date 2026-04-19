@@ -1,4 +1,4 @@
-package com.example.goldencinema
+﻿package com.example.goldencinema
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -16,11 +16,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.goldencinema.R
 import com.example.goldencinema.ui.theme.CinemaGold
+import com.example.goldencinema.ui.theme.DarkBackground
 
 // 1. MODEL DANYCH REZERWACJI
 data class Reservation(
@@ -35,36 +38,62 @@ data class Reservation(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyReservationsScreen() {
-    // Przykładowe dane rezerwacji użytkownika
-    val myReservations = listOf(
-        Reservation("1", "Dune: Part Two", "Dzisiaj, 12 Kwi", "17:30", "Rząd 7, Miejsce 8, 9", "Sala 1"),
-        Reservation("2", "Kung Fu Panda 4", "Jutro, 13 Kwi", "14:00", "Rząd 3, Miejsce 12", "Sala 3")
+    // Przykładowe dane
+    val reservations = listOf(
+        Reservation("1", "Diuna: Część Druga", "15 Maj 2024", "18:00", "Rząd 4, Miejsce 12, 13", "Potwierdzona"),
+        Reservation("2", "Deadpool & Wolverine", "20 Maj 2024", "20:30", "Rząd 8, Miejsce 15", "Oczekująca")
     )
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Moje Rezerwacje", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = { /* Powrót do profilu/menu */ }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CinemaGold)
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color(0xFF121212))
-            )
-        },
-        containerColor = Color(0xFF121212)
-    ) { padding ->
-        LazyColumn(
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = DarkBackground
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(myReservations) { reservation ->
-                ReservationTicket(reservation)
+            // Nagłówek i przycisk powrotu
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { /* Powrót do profilu/menu */ }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CinemaGold)
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Tytuł ekranu
+                Text(
+                    text = stringResource(R.string.my_reservations_title),
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Główna zawartość
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Jeśli brak rezerwacji
+                if (reservations.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.my_reservations_empty),
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                } else {
+                    items(reservations) { reservation ->
+                        ReservationTicket(reservation)
+                    }
+                }
             }
         }
     }
@@ -111,12 +140,12 @@ fun ReservationTicket(reservation: Reservation) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Miejsce:", color = Color.Gray, fontSize = 12.sp)
+                            Text(stringResource(R.string.ticket_seat_label), color = Color.Gray, fontSize = 12.sp)
                             Text(reservation.seats, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            Text("Sala:", color = Color.Gray, fontSize = 12.sp)
+                            Text(stringResource(R.string.ticket_hall_label), color = Color.Gray, fontSize = 12.sp)
                             Text(reservation.hall, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         }
 
@@ -138,7 +167,7 @@ fun ReservationTicket(reservation: Reservation) {
 
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Pokaż ten kod przy wejściu na salę",
+                        text = stringResource(R.string.ticket_qr_help),
                         color = CinemaGold,
                         fontSize = 11.sp,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
