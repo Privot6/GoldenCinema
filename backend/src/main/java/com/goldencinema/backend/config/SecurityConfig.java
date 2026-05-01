@@ -47,7 +47,9 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/register", "/auth/test").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/screenings").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/screenings/{screeningId}/seats").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/movies/*/screenings").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/movies").hasRole("ADMIN")
                         .requestMatchers("/auth/admin").hasRole("ADMIN")
