@@ -15,12 +15,12 @@ public class ScreeningController {
         this.screeningService = screeningService;
     }
 
-    @GetMapping("/api/screenings")
+    @GetMapping("/screenings")
     public List<ScreeningResponse> getUpcomingScreenings() {
         return screeningService.getUpcomingScreenings();
     }
 
-    @GetMapping("/api/movies/{movieId}/screenings")
+    @GetMapping("/movies/{movieId}/screenings")
     public List<ScreeningResponse> getUpcomingScreeningsByMovieId(@PathVariable Long movieId) {
         return screeningService.getUpcomingScreeningsByMovieId(movieId);
     }
