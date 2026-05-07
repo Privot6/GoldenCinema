@@ -16,7 +16,7 @@ public class ScreeningController {
         this.screeningService = screeningService;
     }
 
-    @GetMapping("/api/screenings")
+    @GetMapping("/screenings")
     public List<ScreeningResponse> getUpcomingScreenings() {
         return screeningService.getUpcomingScreenings();
     }

@@ -4,7 +4,7 @@
 INSERT INTO users (first_name, last_name, email, phone, password_hash, is_active) VALUES
 ('Jan', 'Kowalski', 'user@test.com', '123456789', '$2a$10$gMXXwP.16xNWeR8DbsyB8OepM7N5u988PIt6.o3wN/l4j52k.HItC', true),
 ('Piotr', 'Pracownik', 'employee@test.com', '987654321', '$2a$10$gMXXwP.16xNWeR8DbsyB8OepM7N5u988PIt6.o3wN/l4j52k.HItC', true),
-('Adam', 'Admin', 'admin@test.com', '111222333', '$2a$10$gMXXwP.16xNWeR8DbsyB8OepM7N5u988PIt6.o3wN/l4j52k.HItC', true);
+('Adam', 'Admin', 'admin@test.com', '111222333', '$2b$10$/d6lj2Oi1wEqTtCvd04umO5r5mv/cUga7h2TlewlsZ6.h9xVf2tPa', true);
 
 -- 2. User Roles
 INSERT INTO user_roles (user_id, role_id) VALUES

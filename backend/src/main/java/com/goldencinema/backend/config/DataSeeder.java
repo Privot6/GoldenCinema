@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-@Profile("dev")
+@Profile({"dev", "docker"})
 public class DataSeeder implements ApplicationRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSeeder.class);
@@ -50,42 +50,42 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (roleRepository.count() > 0) {
+        if (userRepository.count() > 0) {
             return;
         }
 
-        logger.info("Initializing dev database with test data...");
+        logger.info("Initializing database with test data...");
 
-        // 1. Roles
-        Role userRole = new Role();
-        userRole.setName("USER");
-        userRole.setDescription("Klient kina");
-        roleRepository.save(userRole);
+        // 1. Roles – fetch existing (created by SQL init) or create if missing
+        Role userRole = roleRepository.findByName("USER").orElseGet(() -> {
+            Role r = new Role(); r.setName("USER"); r.setDescription("Klient kina");
+            return roleRepository.save(r);
+        });
+        Role employeeRole = roleRepository.findByName("EMPLOYEE").orElseGet(() -> {
+            Role r = new Role(); r.setName("EMPLOYEE"); r.setDescription("Pracownik kina");
+            return roleRepository.save(r);
+        });
+        Role adminRole = roleRepository.findByName("ADMIN").orElseGet(() -> {
+            Role r = new Role(); r.setName("ADMIN"); r.setDescription("Administrator systemu");
+            return roleRepository.save(r);
+        });
 
-        Role employeeRole = new Role();
-        employeeRole.setName("EMPLOYEE");
-        employeeRole.setDescription("Pracownik kina");
-        roleRepository.save(employeeRole);
+        // 2. PriceList – skip if already seeded by SQL init
+        if (priceListRepository.count() == 0) {
+            PriceList normal = new PriceList();
+            normal.setTicketType(TicketType.NORMALNY);
+            normal.setPriceMultiplier(new BigDecimal("1.00"));
+            normal.setDescription("Bilet normalny");
+            normal.setIsActive(true);
+            priceListRepository.save(normal);
 
-        Role adminRole = new Role();
-        adminRole.setName("ADMIN");
-        adminRole.setDescription("Administrator systemu");
-        roleRepository.save(adminRole);
-
-        // 2. PriceList
-        PriceList normal = new PriceList();
-        normal.setTicketType(TicketType.NORMALNY);
-        normal.setPriceMultiplier(new BigDecimal("1.00"));
-        normal.setDescription("Bilet normalny");
-        normal.setIsActive(true);
-        priceListRepository.save(normal);
-
-        PriceList ulgowy = new PriceList();
-        ulgowy.setTicketType(TicketType.ULGOWY);
-        ulgowy.setPriceMultiplier(new BigDecimal("0.70"));
-        ulgowy.setDescription("Bilet ulgowy");
-        ulgowy.setIsActive(true);
-        priceListRepository.save(ulgowy);
+            PriceList ulgowy = new PriceList();
+            ulgowy.setTicketType(TicketType.ULGOWY);
+            ulgowy.setPriceMultiplier(new BigDecimal("0.70"));
+            ulgowy.setDescription("Bilet ulgowy");
+            ulgowy.setIsActive(true);
+            priceListRepository.save(ulgowy);
+        }
 
         // 3. Users
         String password = passwordEncoder.encode("Test1234!");
