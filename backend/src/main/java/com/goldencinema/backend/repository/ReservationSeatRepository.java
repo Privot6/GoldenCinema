@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 public interface ReservationSeatRepository extends JpaRepository<ReservationSeat, Long> {
@@ -21,4 +22,12 @@ public interface ReservationSeatRepository extends JpaRepository<ReservationSeat
             @Param("screeningId") Long screeningId,
             @Param("statuses") Collection<ReservationStatus> statuses
     );
+
+    @Query("""
+        SELECT rs
+        FROM ReservationSeat rs
+        JOIN FETCH rs.seat
+        WHERE rs.reservation.id = :reservationId
+    """)
+    List<ReservationSeat> findAllByReservationIdWithSeat(@Param("reservationId") Long reservationId);
 }
