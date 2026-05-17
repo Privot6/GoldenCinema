@@ -50,8 +50,30 @@ public class MovieService {
     public MovieResponse getMovieById(Long id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new MovieNotFoundException("Film nie został znaleziony"));
-
         return mapToResponse(movie);
+    }
+
+    public MovieResponse updateMovie(Long id, CreateMovieRequest request) {
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new MovieNotFoundException("Film nie został znaleziony"));
+        movie.setTitle(request.title());
+        movie.setDescription(request.description());
+        movie.setDurationMinutes(request.durationMinutes());
+        movie.setAgeRating(request.ageRating());
+        movie.setLanguage(request.language());
+        movie.setSubtitles(request.subtitles());
+        movie.setGenre(request.genre());
+        movie.setPosterUrl(request.posterUrl());
+        movie.setUpdatedAt(LocalDateTime.now());
+        return mapToResponse(movieRepository.save(movie));
+    }
+
+    public void deleteMovie(Long id) {
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new MovieNotFoundException("Film nie został znaleziony"));
+        movie.setIsActive(false);
+        movie.setUpdatedAt(LocalDateTime.now());
+        movieRepository.save(movie);
     }
 
     private MovieResponse mapToResponse(Movie movie) {

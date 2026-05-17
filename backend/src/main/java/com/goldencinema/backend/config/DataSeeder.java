@@ -50,9 +50,47 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (userRepository.count() > 0) {
-            return;
+        boolean staticDataExists = userRepository.count() > 0;
+
+        if (!staticDataExists) {
+            seedStaticData();
         }
+
+        seedUpcomingScreenings();
+    }
+
+    private void seedUpcomingScreenings() {
+        LocalDateTime now = LocalDateTime.now();
+        long upcoming = screeningRepository.findUpcomingScreenings(now, ScreeningStatus.ZAPLANOWANY).size();
+        if (upcoming > 0) return;
+
+        logger.info("No upcoming screenings found – generating fresh schedule...");
+
+        List<Movie> movies = movieRepository.findAll();
+        List<CinemaHall> halls = cinemaHallRepository.findAll();
+        if (movies.isEmpty() || halls.isEmpty()) return;
+
+        Movie m1 = movies.stream().filter(m -> m.getTitle().contains("Diuna")).findFirst().orElse(movies.get(0));
+        Movie m2 = movies.stream().filter(m -> m.getTitle().contains("Deadpool")).findFirst().orElse(movies.get(0));
+        Movie m3 = movies.stream().filter(m -> m.getTitle().contains("Kung Fu")).findFirst().orElse(movies.get(0));
+        Movie m4 = movies.stream().filter(m -> m.getTitle().contains("Batman")).findFirst().orElse(movies.get(0));
+        Movie m5 = movies.stream().filter(m -> m.getTitle().contains("Oppenheimer")).findFirst().orElse(movies.get(0));
+
+        CinemaHall hall1 = halls.stream().filter(h -> h.getName().contains("Główna")).findFirst().orElse(halls.get(0));
+        CinemaHall hall2 = halls.stream().filter(h -> h.getName().contains("Mała")).findFirst().orElse(halls.get(0));
+
+        for (int n = 1; n <= 14; n++) {
+            createScreening(m1, hall1, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(46).withSecond(0), new BigDecimal("30.00"));
+            createScreening(m1, hall1, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(46).withSecond(0), new BigDecimal("35.00"));
+            createScreening(m2, hall2, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(0).withSecond(0), new BigDecimal("25.00"));
+            createScreening(m2, hall2, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(0).withSecond(0), new BigDecimal("30.00"));
+            createScreening(m3, hall1, now.plusDays(n).withHour(13).withMinute(0).withSecond(0), now.plusDays(n).withHour(14).withMinute(34).withSecond(0), new BigDecimal("20.00"));
+            createScreening(m4, hall2, now.plusDays(n).withHour(21).withMinute(30).withSecond(0), now.plusDays(n).plusDays(1).withHour(0).withMinute(25).withSecond(0), new BigDecimal("35.00"));
+            createScreening(m5, hall1, now.plusDays(n).withHour(10).withMinute(0).withSecond(0), now.plusDays(n).withHour(13).withMinute(0).withSecond(0), new BigDecimal("25.00"));
+        }
+    }
+
+    private void seedStaticData() {
 
         logger.info("Initializing database with test data...");
 
@@ -179,21 +217,6 @@ public class DataSeeder implements ApplicationRunner {
         
         movieRepository.saveAll(List.of(m1, m2, m3, m4, m5));
 
-        // 6. Screenings
-        for (int n = 1; n <= 7; n++) {
-            createScreening(m1, hall1, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(46).withSecond(0), new BigDecimal("30.00"));
-            createScreening(m1, hall1, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(46).withSecond(0), new BigDecimal("35.00"));
-
-            createScreening(m2, hall2, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(0).withSecond(0), new BigDecimal("25.00"));
-            createScreening(m2, hall2, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(0).withSecond(0), new BigDecimal("30.00"));
-
-            createScreening(m3, hall1, now.plusDays(n).withHour(13).withMinute(0).withSecond(0), now.plusDays(n).withHour(14).withMinute(34).withSecond(0), new BigDecimal("20.00"));
-
-            createScreening(m4, hall2, now.plusDays(n).withHour(21).withMinute(30).withSecond(0), now.plusDays(n).plusDays(1).withHour(0).withMinute(25).withSecond(0), new BigDecimal("35.00"));
-
-            createScreening(m5, hall1, now.plusDays(n).withHour(10).withMinute(0).withSecond(0), now.plusDays(n).withHour(13).withMinute(0).withSecond(0), new BigDecimal("25.00"));
-        }
-        
     }
 
     private Movie createMovie(String title, String desc, int dur, String rating, String lang, String sub, String genre, String url, LocalDateTime now) {

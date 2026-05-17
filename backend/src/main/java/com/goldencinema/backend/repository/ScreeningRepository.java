@@ -25,6 +25,9 @@ public interface ScreeningRepository extends JpaRepository<Screening, Long> {
             @Param("status") ScreeningStatus status
     );
 
+    @Query("SELECT s FROM Screening s JOIN FETCH s.movie JOIN FETCH s.hall ORDER BY s.startTime DESC")
+    List<Screening> findAllWithMovieAndHall();
+
     @Query("""
         SELECT s
         FROM Screening s

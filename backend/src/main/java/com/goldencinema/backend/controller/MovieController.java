@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/movies")
+@RequestMapping({"/movies", "/api/movies"})
 public class MovieController {
 
     private final MovieService movieService;
@@ -32,5 +32,17 @@ public class MovieController {
     @GetMapping("/{id}")
     public ResponseEntity<MovieResponse> getMovieById(@PathVariable Long id) {
         return ResponseEntity.ok(movieService.getMovieById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MovieResponse> updateMovie(@PathVariable Long id,
+                                                     @Valid @RequestBody CreateMovieRequest request) {
+        return ResponseEntity.ok(movieService.updateMovie(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMovie(@PathVariable Long id) {
+        movieService.deleteMovie(id);
+        return ResponseEntity.noContent().build();
     }
 }

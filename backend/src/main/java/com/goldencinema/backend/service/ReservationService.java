@@ -191,6 +191,7 @@ public class ReservationService {
                 screening.getStartTime(),
                 screening.getEndTime(),
                 screening.getBasePrice(),
+                screening.getStatus(),
                 new MovieDto(
                         screening.getMovie().getId(),
                         screening.getMovie().getTitle(),

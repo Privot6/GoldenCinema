@@ -77,6 +77,8 @@ CREATE TABLE seats (
     row_label VARCHAR(10) NOT NULL,
     seat_number INT NOT NULL CHECK (seat_number > 0),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    grid_row INT,
+    grid_col INT,
     CONSTRAINT uq_seat UNIQUE (hall_id, row_label, seat_number),
     CONSTRAINT fk_seat_hall
         FOREIGN KEY (hall_id) REFERENCES cinema_halls(id) ON DELETE CASCADE
