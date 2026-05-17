@@ -23,6 +23,12 @@ public class Seat {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
+    @Column(name = "grid_row")
+    private Integer gridRow;
+
+    @Column(name = "grid_col")
+    private Integer gridCol;
+
     public Seat() {
     }
 
@@ -60,5 +66,21 @@ public class Seat {
 
     public void setIsActive(Boolean active) {
         isActive = active;
+    }
+
+    public Integer getGridRow() {
+        return gridRow;
+    }
+
+    public void setGridRow(Integer gridRow) {
+        this.gridRow = gridRow;
+    }
+
+    public Integer getGridCol() {
+        return gridCol;
+    }
+
+    public void setGridCol(Integer gridCol) {
+        this.gridCol = gridCol;
     }
 }

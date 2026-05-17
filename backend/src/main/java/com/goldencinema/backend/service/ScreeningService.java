@@ -1,5 +1,6 @@
 package com.goldencinema.backend.service;
 
+import com.goldencinema.backend.dto.CreateScreeningRequest;
 import com.goldencinema.backend.dto.HallDto;
 import com.goldencinema.backend.dto.MovieDto;
 import com.goldencinema.backend.dto.ScreeningResponse;
@@ -11,6 +12,8 @@ import com.goldencinema.backend.entity.ReservationStatus;
 import com.goldencinema.backend.entity.Screening;
 import com.goldencinema.backend.entity.ScreeningStatus;
 import com.goldencinema.backend.entity.Seat;
+import com.goldencinema.backend.repository.CinemaHallRepository;
+import com.goldencinema.backend.repository.MovieRepository;
 import com.goldencinema.backend.repository.ReservationSeatRepository;
 import com.goldencinema.backend.repository.ScreeningRepository;
 import com.goldencinema.backend.repository.SeatRepository;
@@ -31,13 +34,19 @@ public class ScreeningService {
     private final ScreeningRepository screeningRepository;
     private final SeatRepository seatRepository;
     private final ReservationSeatRepository reservationSeatRepository;
+    private final MovieRepository movieRepository;
+    private final CinemaHallRepository cinemaHallRepository;
 
     public ScreeningService(ScreeningRepository screeningRepository,
                             SeatRepository seatRepository,
-                            ReservationSeatRepository reservationSeatRepository) {
+                            ReservationSeatRepository reservationSeatRepository,
+                            MovieRepository movieRepository,
+                            CinemaHallRepository cinemaHallRepository) {
         this.screeningRepository = screeningRepository;
         this.seatRepository = seatRepository;
         this.reservationSeatRepository = reservationSeatRepository;
+        this.movieRepository = movieRepository;
+        this.cinemaHallRepository = cinemaHallRepository;
     }
 
     public List<ScreeningResponse> getUpcomingScreenings() {
@@ -95,12 +104,60 @@ public class ScreeningService {
                 .toList();
     }
 
+    public List<ScreeningResponse> getAllScreenings() {
+        return screeningRepository.findAllWithMovieAndHall().stream()
+                .map(this::mapToScreeningResponse)
+                .toList();
+    }
+
+    public ScreeningResponse createScreening(CreateScreeningRequest request) {
+        Movie movie = movieRepository.findById(request.getMovieId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Movie not found"));
+        CinemaHall hall = cinemaHallRepository.findById(request.getHallId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hall not found"));
+        Screening s = new Screening();
+        s.setMovie(movie);
+        s.setHall(hall);
+        s.setStartTime(request.getStartTime());
+        s.setEndTime(request.getEndTime());
+        s.setBasePrice(request.getBasePrice());
+        s.setStatus(ScreeningStatus.ZAPLANOWANY);
+        s.setCreatedAt(java.time.LocalDateTime.now());
+        s.setUpdatedAt(java.time.LocalDateTime.now());
+        return mapToScreeningResponse(screeningRepository.save(s));
+    }
+
+    public ScreeningResponse updateScreening(Long id, CreateScreeningRequest request) {
+        Screening s = screeningRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Screening not found"));
+        Movie movie = movieRepository.findById(request.getMovieId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Movie not found"));
+        CinemaHall hall = cinemaHallRepository.findById(request.getHallId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hall not found"));
+        s.setMovie(movie);
+        s.setHall(hall);
+        s.setStartTime(request.getStartTime());
+        s.setEndTime(request.getEndTime());
+        s.setBasePrice(request.getBasePrice());
+        s.setUpdatedAt(java.time.LocalDateTime.now());
+        return mapToScreeningResponse(screeningRepository.save(s));
+    }
+
+    public void cancelScreening(Long id) {
+        Screening s = screeningRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Screening not found"));
+        s.setStatus(ScreeningStatus.ANULOWANY);
+        s.setUpdatedAt(java.time.LocalDateTime.now());
+        screeningRepository.save(s);
+    }
+
     private ScreeningResponse mapToScreeningResponse(Screening screening) {
         return new ScreeningResponse(
                 screening.getId(),
                 screening.getStartTime(),
                 screening.getEndTime(),
                 screening.getBasePrice(),
+                screening.getStatus(),
                 mapToMovieDto(screening.getMovie()),
                 mapToHallDto(screening.getHall())
         );

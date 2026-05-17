@@ -1,28 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/authStore'
 import api from '@/api/axios'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Table, TableBody, TableCell, TableEmpty,
   TableHead, TableHeader, TableRow
 } from '@/components/ui/table'
-import { AlertCircle, CalendarClock, RefreshCw } from 'lucide-vue-next'
+import { AlertCircle, Building2, CalendarClock, RefreshCw, Ticket, TrendingUp, Users } from 'lucide-vue-next'
 
-interface Movie {
-  id: number
-  title: string
-}
-
-interface Hall {
-  id: number
-  name: string
-}
-
+interface Movie { id: number; title: string }
+interface Hall  { id: number; name: string }
 interface Screening {
   id: number
   movie: Movie
@@ -32,12 +22,18 @@ interface Screening {
   basePrice: number
   status: 'ZAPLANOWANY' | 'ANULOWANY' | 'ZAKONCZONY'
 }
-
-const router = useRouter()
-const authStore = useAuthStore()
+interface Stats {
+  totalUsers: number
+  todayScreenings: number
+  upcomingScreenings: number
+  totalHalls: number
+  monthlyRevenue: number
+}
 
 const screenings = ref<Screening[]>([])
+const stats = ref<Stats | null>(null)
 const loading = ref(false)
+const statsLoading = ref(false)
 const error = ref('')
 
 function statusVariant(status: Screening['status']) {
@@ -78,7 +74,21 @@ async function fetchScreenings() {
   }
 }
 
-onMounted(fetchScreenings)
+async function fetchStats() {
+  statsLoading.value = true
+  try {
+    const { data } = await api.get<Stats>('/admin/stats')
+    stats.value = data
+  } catch {
+    // non-fatal
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+function fetchAll() { Promise.all([fetchScreenings(), fetchStats()]) }
+
+onMounted(fetchAll)
 </script>
 
 <template>
@@ -88,14 +98,78 @@ onMounted(fetchScreenings)
       <div class="flex items-center gap-3">
         <CalendarClock class="w-6 h-6 text-primary" />
         <div>
-          <h1 class="text-xl font-semibold text-foreground">Nadchodzące seanse</h1>
-          <p class="text-sm text-muted-foreground">Posortowane chronologicznie</p>
+          <h1 class="text-xl font-semibold text-foreground">Dashboard</h1>
+          <p class="text-sm text-muted-foreground">Przegląd systemu</p>
         </div>
       </div>
-      <Button variant="outline" size="sm" @click="fetchScreenings" :disabled="loading" class="gap-2">
-        <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+      <Button variant="outline" size="sm" @click="fetchAll" :disabled="loading || statsLoading" class="gap-2">
+        <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading || statsLoading }" />
         Odśwież
       </Button>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <template v-if="statsLoading">
+        <div v-for="i in 5" :key="i" class="h-28 rounded-lg bg-secondary/50 animate-pulse" />
+      </template>
+      <template v-else-if="stats">
+        <Card>
+          <CardHeader class="pb-2">
+            <div class="flex items-center justify-between">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Użytkownicy</CardTitle>
+              <Users class="w-4 h-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent class="pt-0">
+            <p class="text-2xl font-bold">{{ stats.totalUsers }}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="pb-2">
+            <div class="flex items-center justify-between">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Seanse dzisiaj</CardTitle>
+              <CalendarClock class="w-4 h-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent class="pt-0">
+            <p class="text-2xl font-bold">{{ stats.todayScreenings }}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="pb-2">
+            <div class="flex items-center justify-between">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Nadchodzące (7 dni)</CardTitle>
+              <Ticket class="w-4 h-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent class="pt-0">
+            <p class="text-2xl font-bold">{{ stats.upcomingScreenings }}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="pb-2">
+            <div class="flex items-center justify-between">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Sale kinowe</CardTitle>
+              <Building2 class="w-4 h-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent class="pt-0">
+            <p class="text-2xl font-bold">{{ stats.totalHalls }}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="pb-2">
+            <div class="flex items-center justify-between">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Przychód (mies.)</CardTitle>
+              <TrendingUp class="w-4 h-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent class="pt-0">
+            <p class="text-2xl font-bold">{{ formatPrice(stats.monthlyRevenue) }}</p>
+          </CardContent>
+        </Card>
+      </template>
     </div>
 
     <!-- Error -->
@@ -104,10 +178,10 @@ onMounted(fetchScreenings)
       <AlertDescription>{{ error }}</AlertDescription>
     </Alert>
 
-    <!-- Table card -->
+    <!-- Screenings table -->
     <Card>
       <CardHeader class="pb-3">
-        <CardTitle class="text-base">Harmonogram seansów</CardTitle>
+        <CardTitle class="text-base">Nadchodzące seanse</CardTitle>
         <CardDescription>
           {{ screenings.length > 0 ? `${screenings.length} seansów` : 'Brak danych' }}
         </CardDescription>
@@ -135,15 +209,11 @@ onMounted(fetchScreenings)
               <TableCell class="text-muted-foreground tabular-nums">{{ formatDate(s.endTime) }}</TableCell>
               <TableCell class="tabular-nums">{{ formatPrice(s.basePrice) }}</TableCell>
               <TableCell>
-                <Badge :variant="statusVariant(s.status)">
-                  {{ statusLabel(s.status) }}
-                </Badge>
+                <Badge :variant="statusVariant(s.status)">{{ statusLabel(s.status) }}</Badge>
               </TableCell>
             </TableRow>
           </TableBody>
         </Table>
-
-        <!-- Loading skeleton -->
         <div v-if="loading" class="space-y-3 p-4">
           <div v-for="i in 5" :key="i" class="h-10 rounded-md bg-secondary/50 animate-pulse" />
         </div>

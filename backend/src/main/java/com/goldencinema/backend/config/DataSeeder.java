@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Component
 @Profile({"dev", "docker"})
@@ -28,6 +29,7 @@ public class DataSeeder implements ApplicationRunner {
     private final SeatRepository seatRepository;
     private final MovieRepository movieRepository;
     private final ScreeningRepository screeningRepository;
+    private final ReservationRepository reservationRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(RoleRepository roleRepository,
@@ -37,6 +39,7 @@ public class DataSeeder implements ApplicationRunner {
                       SeatRepository seatRepository,
                       MovieRepository movieRepository,
                       ScreeningRepository screeningRepository,
+                      ReservationRepository reservationRepository,
                       PasswordEncoder passwordEncoder) {
         this.roleRepository = roleRepository;
         this.priceListRepository = priceListRepository;
@@ -45,14 +48,54 @@ public class DataSeeder implements ApplicationRunner {
         this.seatRepository = seatRepository;
         this.movieRepository = movieRepository;
         this.screeningRepository = screeningRepository;
+        this.reservationRepository = reservationRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        if (userRepository.count() > 0) {
-            return;
+        boolean staticDataExists = userRepository.count() > 0;
+
+        if (!staticDataExists) {
+            seedStaticData();
         }
+
+        seedUpcomingScreenings();
+        seedReservations();
+    }
+
+    private void seedUpcomingScreenings() {
+        LocalDateTime now = LocalDateTime.now();
+        long upcoming = screeningRepository.findUpcomingScreenings(now, ScreeningStatus.ZAPLANOWANY).size();
+        if (upcoming > 0) return;
+
+        logger.info("No upcoming screenings found – generating fresh schedule...");
+
+        List<Movie> movies = movieRepository.findAll();
+        List<CinemaHall> halls = cinemaHallRepository.findAll();
+        if (movies.isEmpty() || halls.isEmpty()) return;
+
+        Movie m1 = movies.stream().filter(m -> m.getTitle().contains("Diuna")).findFirst().orElse(movies.get(0));
+        Movie m2 = movies.stream().filter(m -> m.getTitle().contains("Deadpool")).findFirst().orElse(movies.get(0));
+        Movie m3 = movies.stream().filter(m -> m.getTitle().contains("Kung Fu")).findFirst().orElse(movies.get(0));
+        Movie m4 = movies.stream().filter(m -> m.getTitle().contains("Batman")).findFirst().orElse(movies.get(0));
+        Movie m5 = movies.stream().filter(m -> m.getTitle().contains("Oppenheimer")).findFirst().orElse(movies.get(0));
+
+        CinemaHall hall1 = halls.stream().filter(h -> h.getName().contains("Główna")).findFirst().orElse(halls.get(0));
+        CinemaHall hall2 = halls.stream().filter(h -> h.getName().contains("Mała")).findFirst().orElse(halls.get(0));
+
+        for (int n = 1; n <= 14; n++) {
+            createScreening(m1, hall1, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(46).withSecond(0), new BigDecimal("30.00"));
+            createScreening(m1, hall1, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(46).withSecond(0), new BigDecimal("35.00"));
+            createScreening(m2, hall2, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(0).withSecond(0), new BigDecimal("25.00"));
+            createScreening(m2, hall2, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(0).withSecond(0), new BigDecimal("30.00"));
+            createScreening(m3, hall1, now.plusDays(n).withHour(13).withMinute(0).withSecond(0), now.plusDays(n).withHour(14).withMinute(34).withSecond(0), new BigDecimal("20.00"));
+            createScreening(m4, hall2, now.plusDays(n).withHour(21).withMinute(30).withSecond(0), now.plusDays(n).plusDays(1).withHour(0).withMinute(25).withSecond(0), new BigDecimal("35.00"));
+            createScreening(m5, hall1, now.plusDays(n).withHour(10).withMinute(0).withSecond(0), now.plusDays(n).withHour(13).withMinute(0).withSecond(0), new BigDecimal("25.00"));
+        }
+    }
+
+    private void seedStaticData() {
 
         logger.info("Initializing database with test data...");
 
@@ -179,21 +222,47 @@ public class DataSeeder implements ApplicationRunner {
         
         movieRepository.saveAll(List.of(m1, m2, m3, m4, m5));
 
-        // 6. Screenings
-        for (int n = 1; n <= 7; n++) {
-            createScreening(m1, hall1, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(46).withSecond(0), new BigDecimal("30.00"));
-            createScreening(m1, hall1, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(46).withSecond(0), new BigDecimal("35.00"));
+    }
 
-            createScreening(m2, hall2, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(0).withSecond(0), new BigDecimal("25.00"));
-            createScreening(m2, hall2, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(0).withSecond(0), new BigDecimal("30.00"));
+    private void seedReservations() {
+        if (reservationRepository.count() > 0) return;
 
-            createScreening(m3, hall1, now.plusDays(n).withHour(13).withMinute(0).withSecond(0), now.plusDays(n).withHour(14).withMinute(34).withSecond(0), new BigDecimal("20.00"));
+        List<Screening> screenings = screeningRepository.findAllWithMovieAndHall();
+        if (screenings.isEmpty()) return;
 
-            createScreening(m4, hall2, now.plusDays(n).withHour(21).withMinute(30).withSecond(0), now.plusDays(n).plusDays(1).withHour(0).withMinute(25).withSecond(0), new BigDecimal("35.00"));
+        User user = userRepository.findByEmail("user@test.com").orElse(null);
+        if (user == null) return;
 
-            createScreening(m5, hall1, now.plusDays(n).withHour(10).withMinute(0).withSecond(0), now.plusDays(n).withHour(13).withMinute(0).withSecond(0), new BigDecimal("25.00"));
+        LocalDateTime now = LocalDateTime.now();
+
+        ReservationStatus[] statuses = {
+            ReservationStatus.OCZEKUJACA,
+            ReservationStatus.OCZEKUJACA,
+            ReservationStatus.POTWIERDZONA,
+            ReservationStatus.POTWIERDZONA,
+            ReservationStatus.ANULOWANA,
+            ReservationStatus.OCZEKUJACA
+        };
+        BigDecimal[] prices = {
+            new BigDecimal("60.00"),
+            new BigDecimal("35.00"),
+            new BigDecimal("70.00"),
+            new BigDecimal("25.00"),
+            new BigDecimal("50.00"),
+            new BigDecimal("45.00")
+        };
+
+        for (int i = 0; i < Math.min(statuses.length, screenings.size()); i++) {
+            Reservation r = new Reservation();
+            r.setUser(user);
+            r.setScreening(screenings.get(i));
+            r.setReservationCode("RES-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            r.setStatus(statuses[i]);
+            r.setTotalPrice(prices[i]);
+            r.setCreatedAt(now.minusDays(i + 1));
+            r.setUpdatedAt(now.minusDays(i + 1));
+            reservationRepository.save(r);
         }
-        
     }
 
     private Movie createMovie(String title, String desc, int dur, String rating, String lang, String sub, String genre, String url, LocalDateTime now) {

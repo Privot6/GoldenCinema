@@ -4,9 +4,23 @@ const api = axios.create({
   baseURL: '/api'
 })
 
+function isTokenValid(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] ?? ''))
+    return payload.exp * 1000 > Date.now()
+  } catch {
+    return false
+  }
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
+    if (!isTokenValid(token)) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+      return Promise.reject(new Error('Token expired'))
+    }
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
