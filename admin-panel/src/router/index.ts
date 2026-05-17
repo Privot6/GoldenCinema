@@ -65,12 +65,27 @@ const router = createRouter({
   ]
 })
 
+function isTokenValid(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] ?? ''))
+    return payload.exp * 1000 > Date.now()
+  } catch {
+    return false
+  }
+}
+
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
-  if (to.meta.requiresAuth && !token) {
+  const valid = !!token && isTokenValid(token)
+
+  if (!valid && token) {
+    localStorage.removeItem('token')
+  }
+
+  if (to.meta.requiresAuth && !valid) {
     return { name: 'login' }
   }
-  if (to.name === 'login' && token) {
+  if (to.name === 'login' && valid) {
     return { name: 'dashboard' }
   }
 })
