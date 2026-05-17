@@ -43,4 +43,20 @@ public interface ScreeningRepository extends JpaRepository<Screening, Long> {
             @Param("from") LocalDateTime from,
             @Param("status") ScreeningStatus status
     );
+
+    boolean existsByMovieId(Long movieId);
+
+    @Query("SELECT COUNT(s) FROM Screening s WHERE s.startTime >= :dayStart AND s.startTime < :dayEnd AND s.status = :status")
+    long countTodayScreenings(
+            @Param("dayStart") LocalDateTime dayStart,
+            @Param("dayEnd") LocalDateTime dayEnd,
+            @Param("status") ScreeningStatus status
+    );
+
+    @Query("SELECT COUNT(s) FROM Screening s WHERE s.startTime > :from AND s.startTime <= :until AND s.status = :status")
+    long countUpcomingScreenings(
+            @Param("from") LocalDateTime from,
+            @Param("until") LocalDateTime until,
+            @Param("status") ScreeningStatus status
+    );
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/axios'
 import { Button } from '@/components/ui/button'
@@ -41,8 +41,9 @@ async function fetchHalls() {
   loading.value = true
   error.value = ''
   try {
-    const { data } = await api.get<HallDto[]>('/api/halls')
+    const { data } = await api.get<HallDto[]>('/halls')
     halls.value = data
+    page.value = 1
   } catch {
     error.value = 'Nie udało się pobrać listy sal.'
   } finally {
@@ -50,10 +51,15 @@ async function fetchHalls() {
   }
 }
 
+const PAGE_SIZE = 25
+const page = ref(1)
+const paged = computed(() => halls.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const totalPages = computed(() => Math.max(1, Math.ceil(halls.value.length / PAGE_SIZE)))
+
 async function deleteHall(hall: HallDto) {
   if (!window.confirm(`Czy na pewno usunąć salę „${hall.name}"? Ta operacja jest nieodwracalna.`)) return
   try {
-    await api.delete(`/api/halls/${hall.id}`)
+    await api.delete(`/halls/${hall.id}`)
     halls.value = halls.value.filter(h => h.id !== hall.id)
   } catch {
     error.value = 'Nie udało się usunąć sali.'
@@ -70,7 +76,7 @@ async function toggleLayout(hall: HallDto) {
 
   layoutLoading.value[hall.id] = true
   try {
-    const { data } = await api.get<HallLayout>(`/api/halls/${hall.id}`)
+    const { data } = await api.get<HallLayout>(`/halls/${hall.id}`)
     layouts.value[hall.id] = data
   } catch {
     layouts.value[hall.id] = null
@@ -123,7 +129,7 @@ onMounted(fetchHalls)
     </div>
 
     <div v-else class="space-y-4">
-      <Card v-for="hall in halls" :key="hall.id">
+      <Card v-for="hall in paged" :key="hall.id">
         <CardHeader class="pb-3">
           <div class="flex items-center justify-between">
             <CardTitle class="text-base">{{ hall.name }}</CardTitle>
@@ -211,6 +217,14 @@ onMounted(fetchHalls)
           </template>
         </CardContent>
       </Card>
+    </div>
+
+    <div v-if="totalPages > 1" class="flex items-center justify-between">
+      <span class="text-sm text-muted-foreground">Strona {{ page }} z {{ totalPages }} ({{ halls.length }} sal)</span>
+      <div class="flex gap-2">
+        <Button variant="outline" size="sm" :disabled="page === 1" @click="page--">Poprzednia</Button>
+        <Button variant="outline" size="sm" :disabled="page === totalPages" @click="page++">Następna</Button>
+      </div>
     </div>
   </div>
 </template>

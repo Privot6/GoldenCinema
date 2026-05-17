@@ -5,7 +5,10 @@ import com.goldencinema.backend.dto.MovieResponse;
 import com.goldencinema.backend.entity.Movie;
 import com.goldencinema.backend.exception.MovieNotFoundException;
 import com.goldencinema.backend.repository.MovieRepository;
+import com.goldencinema.backend.repository.ScreeningRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,9 +17,11 @@ import java.util.List;
 public class MovieService {
 
     private final MovieRepository movieRepository;
+    private final ScreeningRepository screeningRepository;
 
-    public MovieService(MovieRepository movieRepository) {
+    public MovieService(MovieRepository movieRepository, ScreeningRepository screeningRepository) {
         this.movieRepository = movieRepository;
+        this.screeningRepository = screeningRepository;
     }
 
     public MovieResponse createMovie(CreateMovieRequest request) {
@@ -71,9 +76,11 @@ public class MovieService {
     public void deleteMovie(Long id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new MovieNotFoundException("Film nie został znaleziony"));
-        movie.setIsActive(false);
-        movie.setUpdatedAt(LocalDateTime.now());
-        movieRepository.save(movie);
+        if (screeningRepository.existsByMovieId(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Nie można usunąć filmu, który ma przypisane seanse.");
+        }
+        movieRepository.delete(movie);
     }
 
     private MovieResponse mapToResponse(Movie movie) {

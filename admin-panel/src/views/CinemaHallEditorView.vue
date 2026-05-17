@@ -115,9 +115,9 @@ async function save() {
   saving.value = true
   try {
     if (isEdit.value) {
-      await api.put(`/api/halls/${hallId.value}`, { name: hallName.value, seats })
+      await api.put(`/halls/${hallId.value}`, { name: hallName.value, seats })
     } else {
-      await api.post('/api/halls', { name: hallName.value, seats })
+      await api.post('/halls', { name: hallName.value, seats })
     }
     router.push('/halls')
   } catch (e: any) {
@@ -135,7 +135,7 @@ onMounted(async () => {
   if (!isEdit.value) return
   loading.value = true
   try {
-    const { data } = await api.get(`/api/halls/${hallId.value}`)
+    const { data } = await api.get(`/halls/${hallId.value}`)
     hallName.value = data.name
     const newGrid: boolean[][] = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(false))
     for (const seat of data.seats as SeatGridItemDto[]) {

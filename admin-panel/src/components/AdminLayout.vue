@@ -3,7 +3,7 @@ import { RouterView, RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
-import { Film, LogOut, LayoutDashboard, Users, Ticket, Building2 } from 'lucide-vue-next'
+import { Film, LogOut, LayoutDashboard, Users, Ticket, Building2, ClipboardList } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -56,6 +56,10 @@ function handleLogout() {
           <RouterLink to="/users" class="flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground" active-class="bg-secondary text-secondary-foreground">
             <Users class="w-5 h-5" />
             Użytkownicy
+          </RouterLink>
+          <RouterLink to="/reservations" class="flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground" active-class="bg-secondary text-secondary-foreground">
+            <ClipboardList class="w-5 h-5" />
+            Rezerwacje
           </RouterLink>
         </nav>
       </aside>

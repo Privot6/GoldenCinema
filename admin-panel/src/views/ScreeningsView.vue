@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -81,6 +81,11 @@ function formatDate(iso: string) {
   }).format(new Date(iso))
 }
 
+const PAGE_SIZE = 25
+const page = ref(1)
+const paged = computed(() => screenings.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const totalPages = computed(() => Math.max(1, Math.ceil(screenings.value.length / PAGE_SIZE)))
+
 async function fetchData() {
   loading.value = true; error.value = ''
   try {
@@ -90,6 +95,7 @@ async function fetchData() {
       api.get<HallOption[]>('/halls')
     ])
     screenings.value = s.data; movies.value = m.data; halls.value = h.data
+    page.value = 1
   } catch { error.value = 'Nie udało się pobrać danych.' }
   finally { loading.value = false }
 }
@@ -211,7 +217,7 @@ onMounted(fetchData)
           </TableHeader>
           <TableBody>
             <TableEmpty v-if="screenings.length === 0">Brak seansów</TableEmpty>
-            <TableRow v-for="s in screenings" :key="s.id">
+            <TableRow v-for="s in paged" :key="s.id">
               <TableCell class="font-medium">{{ s.movie.title }}</TableCell>
               <TableCell class="text-muted-foreground">{{ s.hall.name }}</TableCell>
               <TableCell class="tabular-nums text-muted-foreground">{{ formatDate(s.startTime) }}</TableCell>
@@ -235,6 +241,13 @@ onMounted(fetchData)
             </TableRow>
           </TableBody>
         </Table>
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
+          <span class="text-sm text-muted-foreground">Strona {{ page }} z {{ totalPages }} ({{ screenings.length }} seansów)</span>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" :disabled="page === 1" @click="page--">Poprzednia</Button>
+            <Button variant="outline" size="sm" :disabled="page === totalPages" @click="page++">Następna</Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   </div>

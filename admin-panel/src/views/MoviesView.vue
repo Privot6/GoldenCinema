@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -56,11 +56,17 @@ function openEdit(m: Movie) {
 
 function closeForm() { showForm.value = false; resetForm() }
 
+const PAGE_SIZE = 25
+const page = ref(1)
+const paged = computed(() => movies.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+const totalPages = computed(() => Math.max(1, Math.ceil(movies.value.length / PAGE_SIZE)))
+
 async function fetchMovies() {
   loading.value = true; error.value = ''
   try {
     const { data } = await api.get<Movie[]>('/movies')
     movies.value = data
+    page.value = 1
   } catch { error.value = 'Nie udało się pobrać filmów.' }
   finally { loading.value = false }
 }
@@ -88,7 +94,7 @@ async function deleteMovie(m: Movie) {
   try {
     await api.delete(`/movies/${m.id}`)
     movies.value = movies.value.filter(x => x.id !== m.id)
-  } catch { error.value = 'Nie udało się usunąć filmu.' }
+  } catch (e: any) { error.value = e?.response?.data?.message ?? 'Nie udało się usunąć filmu.' }
 }
 
 onMounted(fetchMovies)
@@ -178,7 +184,7 @@ onMounted(fetchMovies)
           </TableHeader>
           <TableBody>
             <TableEmpty v-if="movies.length === 0">Brak filmów</TableEmpty>
-            <TableRow v-for="m in movies" :key="m.id">
+            <TableRow v-for="m in paged" :key="m.id">
               <TableCell class="font-medium">{{ m.title }}</TableCell>
               <TableCell class="text-muted-foreground">{{ m.genre }}</TableCell>
               <TableCell class="tabular-nums">{{ m.durationMinutes }} min</TableCell>
@@ -202,6 +208,13 @@ onMounted(fetchMovies)
             </TableRow>
           </TableBody>
         </Table>
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
+          <span class="text-sm text-muted-foreground">Strona {{ page }} z {{ totalPages }} ({{ movies.length }} filmów)</span>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" :disabled="page === 1" @click="page--">Poprzednia</Button>
+            <Button variant="outline" size="sm" :disabled="page === totalPages" @click="page++">Następna</Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   </div>

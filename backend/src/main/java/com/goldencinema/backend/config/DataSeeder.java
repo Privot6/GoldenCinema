@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Component
 @Profile({"dev", "docker"})
@@ -28,6 +29,7 @@ public class DataSeeder implements ApplicationRunner {
     private final SeatRepository seatRepository;
     private final MovieRepository movieRepository;
     private final ScreeningRepository screeningRepository;
+    private final ReservationRepository reservationRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(RoleRepository roleRepository,
@@ -37,6 +39,7 @@ public class DataSeeder implements ApplicationRunner {
                       SeatRepository seatRepository,
                       MovieRepository movieRepository,
                       ScreeningRepository screeningRepository,
+                      ReservationRepository reservationRepository,
                       PasswordEncoder passwordEncoder) {
         this.roleRepository = roleRepository;
         this.priceListRepository = priceListRepository;
@@ -45,6 +48,7 @@ public class DataSeeder implements ApplicationRunner {
         this.seatRepository = seatRepository;
         this.movieRepository = movieRepository;
         this.screeningRepository = screeningRepository;
+        this.reservationRepository = reservationRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -57,6 +61,7 @@ public class DataSeeder implements ApplicationRunner {
         }
 
         seedUpcomingScreenings();
+        seedReservations();
     }
 
     private void seedUpcomingScreenings() {
@@ -217,6 +222,47 @@ public class DataSeeder implements ApplicationRunner {
         
         movieRepository.saveAll(List.of(m1, m2, m3, m4, m5));
 
+    }
+
+    private void seedReservations() {
+        if (reservationRepository.count() > 0) return;
+
+        List<Screening> screenings = screeningRepository.findAllWithMovieAndHall();
+        if (screenings.isEmpty()) return;
+
+        User user = userRepository.findByEmail("user@test.com").orElse(null);
+        if (user == null) return;
+
+        LocalDateTime now = LocalDateTime.now();
+
+        ReservationStatus[] statuses = {
+            ReservationStatus.OCZEKUJACA,
+            ReservationStatus.OCZEKUJACA,
+            ReservationStatus.POTWIERDZONA,
+            ReservationStatus.POTWIERDZONA,
+            ReservationStatus.ANULOWANA,
+            ReservationStatus.OCZEKUJACA
+        };
+        BigDecimal[] prices = {
+            new BigDecimal("60.00"),
+            new BigDecimal("35.00"),
+            new BigDecimal("70.00"),
+            new BigDecimal("25.00"),
+            new BigDecimal("50.00"),
+            new BigDecimal("45.00")
+        };
+
+        for (int i = 0; i < Math.min(statuses.length, screenings.size()); i++) {
+            Reservation r = new Reservation();
+            r.setUser(user);
+            r.setScreening(screenings.get(i));
+            r.setReservationCode("RES-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            r.setStatus(statuses[i]);
+            r.setTotalPrice(prices[i]);
+            r.setCreatedAt(now.minusDays(i + 1));
+            r.setUpdatedAt(now.minusDays(i + 1));
+            reservationRepository.save(r);
+        }
     }
 
     private Movie createMovie(String title, String desc, int dur, String rating, String lang, String sub, String genre, String url, LocalDateTime now) {
