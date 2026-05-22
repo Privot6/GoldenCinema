@@ -51,7 +51,7 @@ async function fetchHalls() {
   }
 }
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 20
 const page = ref(1)
 const paged = computed(() => halls.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
 const totalPages = computed(() => Math.max(1, Math.ceil(halls.value.length / PAGE_SIZE)))

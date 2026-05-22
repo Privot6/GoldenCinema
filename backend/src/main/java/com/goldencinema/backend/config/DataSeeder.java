@@ -11,16 +11,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 @Profile({"dev", "docker"})
 public class DataSeeder implements ApplicationRunner {
 
-    private static final Logger logger = LoggerFactory.getLogger(DataSeeder.class);
+    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private final RoleRepository roleRepository;
     private final PriceListRepository priceListRepository;
@@ -32,14 +31,10 @@ public class DataSeeder implements ApplicationRunner {
     private final ReservationRepository reservationRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataSeeder(RoleRepository roleRepository,
-                      PriceListRepository priceListRepository,
-                      UserRepository userRepository,
-                      CinemaHallRepository cinemaHallRepository,
-                      SeatRepository seatRepository,
-                      MovieRepository movieRepository,
-                      ScreeningRepository screeningRepository,
-                      ReservationRepository reservationRepository,
+    public DataSeeder(RoleRepository roleRepository, PriceListRepository priceListRepository,
+                      UserRepository userRepository, CinemaHallRepository cinemaHallRepository,
+                      SeatRepository seatRepository, MovieRepository movieRepository,
+                      ScreeningRepository screeningRepository, ReservationRepository reservationRepository,
                       PasswordEncoder passwordEncoder) {
         this.roleRepository = roleRepository;
         this.priceListRepository = priceListRepository;
@@ -54,243 +49,251 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        boolean staticDataExists = userRepository.count() > 0;
-
-        if (!staticDataExists) {
-            seedStaticData();
-        }
-
-        seedUpcomingScreenings();
-        seedReservations();
+        if (userRepository.count() > 0) return;
+        log.info("Empty database detected – seeding...");
+        seedAll();
+        log.info("Seeding complete. Screenings: {}, Reservations: {}",
+                screeningRepository.count(), reservationRepository.count());
     }
 
-    private void seedUpcomingScreenings() {
-        LocalDateTime now = LocalDateTime.now();
-        long upcoming = screeningRepository.findUpcomingScreenings(now, ScreeningStatus.ZAPLANOWANY).size();
-        if (upcoming > 0) return;
+    // ── top-level ────────────────────────────────────────────────────────────
 
-        logger.info("No upcoming screenings found – generating fresh schedule...");
+    private void seedAll() {
+        Role userRole     = ensureRole("USER",     "Klient kina");
+        Role employeeRole = ensureRole("EMPLOYEE", "Pracownik kina");
+        Role adminRole    = ensureRole("ADMIN",    "Administrator systemu");
 
-        List<Movie> movies = movieRepository.findAll();
-        List<CinemaHall> halls = cinemaHallRepository.findAll();
-        if (movies.isEmpty() || halls.isEmpty()) return;
+        seedPriceList();
 
-        Movie m1 = movies.stream().filter(m -> m.getTitle().contains("Diuna")).findFirst().orElse(movies.get(0));
-        Movie m2 = movies.stream().filter(m -> m.getTitle().contains("Deadpool")).findFirst().orElse(movies.get(0));
-        Movie m3 = movies.stream().filter(m -> m.getTitle().contains("Kung Fu")).findFirst().orElse(movies.get(0));
-        Movie m4 = movies.stream().filter(m -> m.getTitle().contains("Batman")).findFirst().orElse(movies.get(0));
-        Movie m5 = movies.stream().filter(m -> m.getTitle().contains("Oppenheimer")).findFirst().orElse(movies.get(0));
-
-        CinemaHall hall1 = halls.stream().filter(h -> h.getName().contains("Główna")).findFirst().orElse(halls.get(0));
-        CinemaHall hall2 = halls.stream().filter(h -> h.getName().contains("Mała")).findFirst().orElse(halls.get(0));
-
-        for (int n = 1; n <= 14; n++) {
-            createScreening(m1, hall1, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(46).withSecond(0), new BigDecimal("30.00"));
-            createScreening(m1, hall1, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(46).withSecond(0), new BigDecimal("35.00"));
-            createScreening(m2, hall2, now.plusDays(n).withHour(15).withMinute(0).withSecond(0), now.plusDays(n).withHour(17).withMinute(0).withSecond(0), new BigDecimal("25.00"));
-            createScreening(m2, hall2, now.plusDays(n).withHour(19).withMinute(0).withSecond(0), now.plusDays(n).withHour(21).withMinute(0).withSecond(0), new BigDecimal("30.00"));
-            createScreening(m3, hall1, now.plusDays(n).withHour(13).withMinute(0).withSecond(0), now.plusDays(n).withHour(14).withMinute(34).withSecond(0), new BigDecimal("20.00"));
-            createScreening(m4, hall2, now.plusDays(n).withHour(21).withMinute(30).withSecond(0), now.plusDays(n).plusDays(1).withHour(0).withMinute(25).withSecond(0), new BigDecimal("35.00"));
-            createScreening(m5, hall1, now.plusDays(n).withHour(10).withMinute(0).withSecond(0), now.plusDays(n).withHour(13).withMinute(0).withSecond(0), new BigDecimal("25.00"));
-        }
+        List<User> regularUsers = seedUsers(userRole, employeeRole, adminRole);
+        List<CinemaHall> halls  = seedHalls();
+        List<Movie>      movies = seedMovies();
+        List<Screening>  past   = seedScreenings(movies, halls);
+        seedReservations(regularUsers, past);
     }
 
-    private void seedStaticData() {
+    // ── roles & prices ───────────────────────────────────────────────────────
 
-        logger.info("Initializing database with test data...");
-
-        // 1. Roles – fetch existing (created by SQL init) or create if missing
-        Role userRole = roleRepository.findByName("USER").orElseGet(() -> {
-            Role r = new Role(); r.setName("USER"); r.setDescription("Klient kina");
+    private Role ensureRole(String name, String desc) {
+        return roleRepository.findByName(name).orElseGet(() -> {
+            Role r = new Role(); r.setName(name); r.setDescription(desc);
             return roleRepository.save(r);
         });
-        Role employeeRole = roleRepository.findByName("EMPLOYEE").orElseGet(() -> {
-            Role r = new Role(); r.setName("EMPLOYEE"); r.setDescription("Pracownik kina");
-            return roleRepository.save(r);
-        });
-        Role adminRole = roleRepository.findByName("ADMIN").orElseGet(() -> {
-            Role r = new Role(); r.setName("ADMIN"); r.setDescription("Administrator systemu");
-            return roleRepository.save(r);
-        });
+    }
 
-        // 2. PriceList – skip if already seeded by SQL init
-        if (priceListRepository.count() == 0) {
-            PriceList normal = new PriceList();
-            normal.setTicketType(TicketType.NORMALNY);
-            normal.setPriceMultiplier(new BigDecimal("1.00"));
-            normal.setDescription("Bilet normalny");
-            normal.setIsActive(true);
-            priceListRepository.save(normal);
+    private void seedPriceList() {
+        if (priceListRepository.count() > 0) return;
+        savePriceEntry(TicketType.NORMALNY, "1.00", "Bilet normalny");
+        savePriceEntry(TicketType.ULGOWY,   "0.70", "Bilet ulgowy");
+    }
 
-            PriceList ulgowy = new PriceList();
-            ulgowy.setTicketType(TicketType.ULGOWY);
-            ulgowy.setPriceMultiplier(new BigDecimal("0.70"));
-            ulgowy.setDescription("Bilet ulgowy");
-            ulgowy.setIsActive(true);
-            priceListRepository.save(ulgowy);
-        }
+    private void savePriceEntry(TicketType type, String mult, String desc) {
+        PriceList p = new PriceList();
+        p.setTicketType(type);
+        p.setPriceMultiplier(new BigDecimal(mult));
+        p.setDescription(desc);
+        p.setIsActive(true);
+        priceListRepository.save(p);
+    }
 
-        // 3. Users
-        String password = passwordEncoder.encode("Test1234!");
+    // ── users ────────────────────────────────────────────────────────────────
+
+    private List<User> seedUsers(Role userRole, Role employeeRole, Role adminRole) {
+        String pw = passwordEncoder.encode("Test1234!");
         LocalDateTime now = LocalDateTime.now();
 
-        User user = new User();
-        user.setFirstName("Jan");
-        user.setLastName("Kowalski");
-        user.setEmail("user@test.com");
-        user.setPhone("123456789");
-        user.setPasswordHash(password);
-        user.setIsActive(true);
-        user.setRoles(Set.of(userRole));
-        user.setCreatedAt(now);
-        user.setUpdatedAt(now);
-        userRepository.save(user);
+        createUser("Adam",       "Admin",       "admin@test.com",       "111222333", pw, Set.of(adminRole),    now);
+        createUser("Piotr",      "Pracownik",   "employee@test.com",    "987654321", pw, Set.of(employeeRole), now.minusDays(300));
+        createUser("Anna",       "Pracownik",   "employee2@test.com",   "888777666", pw, Set.of(employeeRole), now.minusDays(280));
 
-        User employee = new User();
-        employee.setFirstName("Piotr");
-        employee.setLastName("Pracownik");
-        employee.setEmail("employee@test.com");
-        employee.setPhone("987654321");
-        employee.setPasswordHash(password);
-        employee.setIsActive(true);
-        employee.setRoles(Set.of(employeeRole));
-        employee.setCreatedAt(now);
-        employee.setUpdatedAt(now);
-        userRepository.save(employee);
+        String[][] clients = {
+            {"Jan",        "Kowalski",     "user@test.com",    "123456789"},
+            {"Maria",      "Nowak",        "user2@test.com",   "234567890"},
+            {"Tomasz",     "Wiśniewski",   "user3@test.com",   "345678901"},
+            {"Agnieszka",  "Zając",        "user4@test.com",   "456789012"},
+            {"Robert",     "Szymański",    "user5@test.com",   "567890123"},
+            {"Katarzyna",  "Woźniak",      "user6@test.com",   "678901234"},
+            {"Marek",      "Kowalczyk",    "user7@test.com",   "789012345"},
+            {"Joanna",     "Lewandowska",  "user8@test.com",   "890123456"},
+            {"Krzysztof",  "Wójcik",       "user9@test.com",   "901234567"},
+            {"Aleksandra", "Kamińska",     "user10@test.com",  "012345678"},
+            {"Dawid",      "Jabłoński",    "user11@test.com",  "123123123"},
+            {"Monika",     "Pietrzak",     "user12@test.com",  "456456456"},
+        };
 
-        User admin = new User();
-        admin.setFirstName("Adam");
-        admin.setLastName("Admin");
-        admin.setEmail("admin@test.com");
-        admin.setPhone("111222333");
-        admin.setPasswordHash(password);
-        admin.setIsActive(true);
-        admin.setRoles(Set.of(adminRole));
-        admin.setCreatedAt(now);
-        admin.setUpdatedAt(now);
-        userRepository.save(admin);
+        List<User> regularUsers = new ArrayList<>();
+        for (int i = 0; i < clients.length; i++) {
+            String[] c = clients[i];
+            regularUsers.add(createUser(c[0], c[1], c[2], c[3], pw, Set.of(userRole), now.minusDays(i * 15L)));
+        }
+        return regularUsers;
+    }
 
-        // 4. Cinema Halls & Seats
-        CinemaHall hall1 = new CinemaHall();
-        hall1.setName("Sala Główna");
-        hall1.setRowsCount(8);
-        hall1.setSeatsPerRow(10);
-        hall1.setIsActive(true);
-        hall1.setCreatedAt(now);
-        hall1.setUpdatedAt(now);
-        hall1 = cinemaHallRepository.save(hall1);
+    private User createUser(String first, String last, String email, String phone,
+                            String pw, Set<Role> roles, LocalDateTime createdAt) {
+        User u = new User();
+        u.setFirstName(first); u.setLastName(last); u.setEmail(email); u.setPhone(phone);
+        u.setPasswordHash(pw); u.setIsActive(true); u.setRoles(roles);
+        u.setCreatedAt(createdAt); u.setUpdatedAt(createdAt);
+        return userRepository.save(u);
+    }
 
-        for (int i = 1; i <= 8; i++) {
-            String rowLabel = String.valueOf((char) ('A' + i - 1));
-            for (int s = 1; s <= 10; s++) {
+    // ── halls ────────────────────────────────────────────────────────────────
+
+    private List<CinemaHall> seedHalls() {
+        LocalDateTime now = LocalDateTime.now();
+        List<CinemaHall> halls = new ArrayList<>();
+        halls.add(buildHall("Sala Główna",  8, 10, now));
+        halls.add(buildHall("Sala VIP",     5,  8, now));
+        halls.add(buildHall("Sala IMAX",   10, 12, now));
+        halls.add(buildHall("Sala Mała",    4,  6, now));
+        return halls;
+    }
+
+    private CinemaHall buildHall(String name, int rows, int seatsPerRow, LocalDateTime now) {
+        CinemaHall h = new CinemaHall();
+        h.setName(name); h.setRowsCount(rows); h.setSeatsPerRow(seatsPerRow);
+        h.setIsActive(true); h.setCreatedAt(now); h.setUpdatedAt(now);
+        h = cinemaHallRepository.save(h);
+        for (int r = 0; r < rows; r++) {
+            String label = String.valueOf((char) ('A' + r));
+            for (int s = 1; s <= seatsPerRow; s++) {
                 Seat seat = new Seat();
-                seat.setHall(hall1);
-                seat.setRowLabel(rowLabel);
-                seat.setSeatNumber(s);
+                seat.setHall(h); seat.setRowLabel(label); seat.setSeatNumber(s);
                 seat.setIsActive(true);
                 seatRepository.save(seat);
             }
         }
-
-        CinemaHall hall2 = new CinemaHall();
-        hall2.setName("Sala Mała");
-        hall2.setRowsCount(5);
-        hall2.setSeatsPerRow(8);
-        hall2.setIsActive(true);
-        hall2.setCreatedAt(now);
-        hall2.setUpdatedAt(now);
-        hall2 = cinemaHallRepository.save(hall2);
-
-        for (int i = 1; i <= 5; i++) {
-            String rowLabel = String.valueOf((char) ('A' + i - 1));
-            for (int s = 1; s <= 8; s++) {
-                Seat seat = new Seat();
-                seat.setHall(hall2);
-                seat.setRowLabel(rowLabel);
-                seat.setSeatNumber(s);
-                seat.setIsActive(true);
-                seatRepository.save(seat);
-            }
-        }
-
-        // 5. Movies
-        Movie m1 = createMovie("Diuna: Część Druga", "Epicka kontynuacja adaptacji słynnej powieści.", 166, "PG-13", "Angielski", "Polski", "Sci-Fi", "https://example.com/diuna2.jpg", now);
-        Movie m2 = createMovie("Deadpool & Wolverine", "Superbohaterowie w akcji.", 120, "R", "Angielski", "Polski", "Akcja / Komedia", "https://example.com/deadpool.jpg", now);
-        Movie m3 = createMovie("Kung Fu Panda 4", "Kolejna część przygód Po.", 94, "G", "Polski Dubbing", null, "Animacja / Familijny", "https://example.com/panda.jpg", now);
-        Movie m4 = createMovie("The Batman", "Mroczny rycerz wraca do Gotham.", 175, "PG-13", "Angielski", "Polski", "Thriller / Akcja", "https://example.com/batman.jpg", now);
-        Movie m5 = createMovie("Oppenheimer", "Historia twórcy bomby atomowej.", 180, "R", "Angielski", "Polski", "Dramat / Historyczny", "https://example.com/oppenheimer.jpg", now);
-        
-        movieRepository.saveAll(List.of(m1, m2, m3, m4, m5));
-
+        return h;
     }
 
-    private void seedReservations() {
-        if (reservationRepository.count() > 0) return;
+    // ── movies ───────────────────────────────────────────────────────────────
 
-        List<Screening> screenings = screeningRepository.findAllWithMovieAndHall();
-        if (screenings.isEmpty()) return;
-
-        User user = userRepository.findByEmail("user@test.com").orElse(null);
-        if (user == null) return;
-
+    private List<Movie> seedMovies() {
         LocalDateTime now = LocalDateTime.now();
+        String[][] data = {
+            {"Diuna: Część Druga",                       "Epicka kontynuacja adaptacji słynnej powieści Franka Herberta.",   "166", "PG-13", "Angielski",      "Polski",  "Sci-Fi"},
+            {"Deadpool & Wolverine",                     "Superbohaterowie w komediowej akcji.",                             "120", "R",     "Angielski",      "Polski",  "Akcja / Komedia"},
+            {"Kung Fu Panda 4",                          "Kolejna część przygód niedźwiedzia Po.",                           "94",  "G",     "Polski Dubbing", "",        "Animacja / Familijny"},
+            {"The Batman",                               "Mroczny rycerz powraca, by uratować Gotham.",                      "175", "PG-13", "Angielski",      "Polski",  "Thriller / Akcja"},
+            {"Oppenheimer",                              "Historia twórcy bomby atomowej i jego moralnych rozterek.",         "180", "R",     "Angielski",      "Polski",  "Dramat / Historyczny"},
+            {"Szybcy i Wściekli X",                      "Dominic Toretto i jego rodzina stawiają czoła nowym wrogom.",      "141", "PG-13", "Angielski",      "Polski",  "Akcja"},
+            {"Strażnicy Galaktyki 3",                    "Ostatnia misja strażników, by uratować Rocketa.",                  "150", "PG-13", "Angielski",      "Polski",  "Akcja / Sci-Fi"},
+            {"Transformers: Przebudzenie Bestii",        "Optimus Prime i nowi sojusznicy w walce o Ziemię.",               "127", "PG-13", "Angielski",      "Polski",  "Akcja / Sci-Fi"},
+            {"Indiana Jones i Artefakt Przeznaczenia",   "Ostatnia wielka przygoda doktora Jonesa.",                         "154", "PG-13", "Angielski",      "Polski",  "Przygodowy"},
+            {"Elemental",                                "Pixar o żywiołach i miłości ponad różnicami.",                    "101", "PG",    "Polski Dubbing", "",        "Animacja / Familijny"},
+            {"Wonka",                                    "Historia młodego, pełnego marzeń Willi Wonki.",                   "116", "PG",    "Angielski",      "Polski",  "Musical / Familijny"},
+            {"Napoleon",                                 "Epicki portret życia i upadku Napoleona Bonapartego.",             "158", "R",     "Angielski",      "Polski",  "Dramat Historyczny"},
+            {"Wicked",                                   "Zdjęcia z musicalu o czarownicach z Krainy Oz.",                  "160", "PG",    "Angielski",      "Polski",  "Musical"},
+            {"Kraven: Łowca",                            "Najbardziej niebezpieczny myśliwy Marvela w akcji.",              "127", "PG-13", "Angielski",      "Polski",  "Akcja / Superbohater"},
+            {"Nosferatu",                                "Mroczna, współczesna wersja klasycznego horroru.",                 "132", "R",     "Angielski",      "Polski",  "Horror"},
+        };
+        List<Movie> movies = new ArrayList<>();
+        for (String[] row : data) {
+            Movie m = new Movie();
+            m.setTitle(row[0]); m.setDescription(row[1]);
+            m.setDurationMinutes(Integer.parseInt(row[2]));
+            m.setAgeRating(row[3]); m.setLanguage(row[4]);
+            m.setSubtitles(row[5].isEmpty() ? null : row[5]);
+            m.setGenre(row[6]); m.setPosterUrl(""); m.setIsActive(true);
+            m.setCreatedAt(now); m.setUpdatedAt(now);
+            movies.add(movieRepository.save(m));
+        }
+        return movies;
+    }
 
+    // ── screenings ───────────────────────────────────────────────────────────
+    //  4 halls × 2 slots × 63 days ≈ 504 screenings
+
+    private static final int[][] MORNING_SLOTS = {{10, 0}, {11, 30}, {13, 0}, {10, 30}};
+    private static final int[][] EVENING_SLOTS = {{17, 0}, {18, 30}, {20, 0}, {19, 0}};
+    private static final BigDecimal[] HALL_PRICES = {
+        new BigDecimal("30.00"), new BigDecimal("45.00"),
+        new BigDecimal("40.00"), new BigDecimal("25.00")
+    };
+
+    private List<Screening> seedScreenings(List<Movie> movies, List<CinemaHall> halls) {
+        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        Random rng = new Random(42);
+        List<Screening> pastScreenings = new ArrayList<>();
+
+        for (int day = -45; day <= 17; day++) {
+            LocalDateTime date = now.plusDays(day);
+            for (int hi = 0; hi < halls.size(); hi++) {
+                CinemaHall hall = halls.get(hi);
+                BigDecimal basePrice = HALL_PRICES[hi];
+
+                // morning screening
+                Movie m1 = movies.get(rng.nextInt(movies.size()));
+                int[] ms = MORNING_SLOTS[hi];
+                LocalDateTime mStart = date.withHour(ms[0]).withMinute(ms[1]);
+                LocalDateTime mEnd   = mStart.plusMinutes(m1.getDurationMinutes() + 20);
+
+                ScreeningStatus mStatus = day < 0
+                        ? (rng.nextInt(20) == 0 ? ScreeningStatus.ANULOWANY : ScreeningStatus.ZAKONCZONY)
+                        : ScreeningStatus.ZAPLANOWANY;
+                Screening ms1 = saveScreening(m1, hall, mStart, mEnd, basePrice, mStatus, now);
+                if (mStatus == ScreeningStatus.ZAKONCZONY) pastScreenings.add(ms1);
+
+                // evening screening
+                Movie m2 = movies.get(rng.nextInt(movies.size()));
+                int[] es = EVENING_SLOTS[hi];
+                LocalDateTime eStart = date.withHour(es[0]).withMinute(es[1]);
+                LocalDateTime eEnd   = eStart.plusMinutes(m2.getDurationMinutes() + 20);
+
+                ScreeningStatus eStatus = day < 0
+                        ? (rng.nextInt(20) == 0 ? ScreeningStatus.ANULOWANY : ScreeningStatus.ZAKONCZONY)
+                        : ScreeningStatus.ZAPLANOWANY;
+                Screening es1 = saveScreening(m2, hall, eStart, eEnd,
+                        basePrice.add(new BigDecimal("5.00")), eStatus, now);
+                if (eStatus == ScreeningStatus.ZAKONCZONY) pastScreenings.add(es1);
+            }
+        }
+        return pastScreenings;
+    }
+
+    private Screening saveScreening(Movie m, CinemaHall h, LocalDateTime start, LocalDateTime end,
+                                    BigDecimal price, ScreeningStatus status, LocalDateTime now) {
+        Screening s = new Screening();
+        s.setMovie(m); s.setHall(h); s.setStartTime(start); s.setEndTime(end);
+        s.setBasePrice(price); s.setStatus(status); s.setCreatedAt(now); s.setUpdatedAt(now);
+        return screeningRepository.save(s);
+    }
+
+    // ── reservations ─────────────────────────────────────────────────────────
+    //  1–3 per past screening, mix of statuses, realistic totalPrice
+
+    private void seedReservations(List<User> users, List<Screening> pastScreenings) {
+        Random rng = new Random(42);
         ReservationStatus[] statuses = {
-            ReservationStatus.OCZEKUJACA,
-            ReservationStatus.OCZEKUJACA,
-            ReservationStatus.POTWIERDZONA,
-            ReservationStatus.POTWIERDZONA,
-            ReservationStatus.ANULOWANA,
+            ReservationStatus.POTWIERDZONA, ReservationStatus.POTWIERDZONA,
+            ReservationStatus.POTWIERDZONA, ReservationStatus.ANULOWANA,
             ReservationStatus.OCZEKUJACA
         };
-        BigDecimal[] prices = {
-            new BigDecimal("60.00"),
-            new BigDecimal("35.00"),
-            new BigDecimal("70.00"),
-            new BigDecimal("25.00"),
-            new BigDecimal("50.00"),
-            new BigDecimal("45.00")
+        BigDecimal[] mults = {
+            BigDecimal.ONE, BigDecimal.ONE, new BigDecimal("0.70")
         };
 
-        for (int i = 0; i < Math.min(statuses.length, screenings.size()); i++) {
-            Reservation r = new Reservation();
-            r.setUser(user);
-            r.setScreening(screenings.get(i));
-            r.setReservationCode("RES-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-            r.setStatus(statuses[i]);
-            r.setTotalPrice(prices[i]);
-            r.setCreatedAt(now.minusDays(i + 1));
-            r.setUpdatedAt(now.minusDays(i + 1));
-            reservationRepository.save(r);
+        for (Screening s : pastScreenings) {
+            int count = 1 + rng.nextInt(3);
+            for (int i = 0; i < count; i++) {
+                User user   = users.get(rng.nextInt(users.size()));
+                ReservationStatus status = statuses[rng.nextInt(statuses.length)];
+                int seats   = 1 + rng.nextInt(4);
+                BigDecimal mult = mults[rng.nextInt(mults.length)];
+                BigDecimal total = s.getBasePrice()
+                        .multiply(mult)
+                        .multiply(BigDecimal.valueOf(seats))
+                        .setScale(2, RoundingMode.HALF_UP);
+                LocalDateTime createdAt = s.getStartTime().minusDays(1 + rng.nextInt(10));
+
+                Reservation r = new Reservation();
+                r.setUser(user); r.setScreening(s);
+                r.setReservationCode("RES-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+                r.setStatus(status); r.setTotalPrice(total);
+                r.setCreatedAt(createdAt); r.setUpdatedAt(createdAt);
+                reservationRepository.save(r);
+            }
         }
-    }
-
-    private Movie createMovie(String title, String desc, int dur, String rating, String lang, String sub, String genre, String url, LocalDateTime now) {
-        Movie m = new Movie();
-        m.setTitle(title);
-        m.setDescription(desc);
-        m.setDurationMinutes(dur);
-        m.setAgeRating(rating);
-        m.setLanguage(lang);
-        m.setSubtitles(sub);
-        m.setGenre(genre);
-        m.setPosterUrl(url);
-        m.setIsActive(true);
-        m.setCreatedAt(now);
-        m.setUpdatedAt(now);
-        return m;
-    }
-
-    private void createScreening(Movie m, CinemaHall h, LocalDateTime start, LocalDateTime end, BigDecimal price) {
-        Screening s = new Screening();
-        s.setMovie(m);
-        s.setHall(h);
-        s.setStartTime(start);
-        s.setEndTime(end);
-        s.setBasePrice(price);
-        s.setStatus(ScreeningStatus.ZAPLANOWANY);
-        s.setCreatedAt(LocalDateTime.now());
-        s.setUpdatedAt(LocalDateTime.now());
-        screeningRepository.save(s);
     }
 }
