@@ -3,6 +3,7 @@ package com.goldencinema.backend.service;
 import com.goldencinema.backend.dto.CreateScreeningRequest;
 import com.goldencinema.backend.dto.HallDto;
 import com.goldencinema.backend.dto.MovieDto;
+import com.goldencinema.backend.dto.PagedResponse;
 import com.goldencinema.backend.dto.ScreeningResponse;
 import com.goldencinema.backend.dto.SeatAvailabilityDto;
 import com.goldencinema.backend.dto.SeatRowDto;
@@ -20,6 +21,10 @@ import com.goldencinema.backend.repository.SeatRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -108,6 +113,19 @@ public class ScreeningService {
         return screeningRepository.findAllWithMovieAndHall().stream()
                 .map(this::mapToScreeningResponse)
                 .toList();
+    }
+
+    public PagedResponse<ScreeningResponse> getAllScreeningsPaged(int page, int size) {
+        Page<Screening> result = screeningRepository.findAllWithMovieAndHall(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startTime")));
+        return new PagedResponse<>(
+                result.getContent().stream().map(this::mapToScreeningResponse).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
     }
 
     public ScreeningResponse createScreening(CreateScreeningRequest request) {

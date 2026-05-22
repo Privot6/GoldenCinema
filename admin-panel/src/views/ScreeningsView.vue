@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +33,10 @@ const loading = ref(false)
 const error = ref('')
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
+
+const currentPage = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
 
 const form = reactive({
   movieId: '' as string | number,
@@ -81,24 +85,31 @@ function formatDate(iso: string) {
   }).format(new Date(iso))
 }
 
-const PAGE_SIZE = 25
-const page = ref(1)
-const paged = computed(() => screenings.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
-const totalPages = computed(() => Math.max(1, Math.ceil(screenings.value.length / PAGE_SIZE)))
+interface PagedResponse<T> { content: T[]; page: number; totalPages: number; totalElements: number; last: boolean }
 
-async function fetchData() {
+async function fetchScreenings(p = currentPage.value) {
   loading.value = true; error.value = ''
   try {
-    const [s, m, h] = await Promise.all([
-      api.get<Screening[]>('/admin/screenings'),
-      api.get<MovieOption[]>('/movies'),
-      api.get<HallOption[]>('/halls')
-    ])
-    screenings.value = s.data; movies.value = m.data; halls.value = h.data
-    page.value = 1
-  } catch { error.value = 'Nie udało się pobrać danych.' }
+    const { data } = await api.get<PagedResponse<Screening>>('/admin/screenings', { params: { page: p, size: 20 } })
+    screenings.value = data.content
+    currentPage.value = data.page
+    totalPages.value = data.totalPages
+    totalElements.value = data.totalElements
+  } catch { error.value = 'Nie udało się pobrać seansów.' }
   finally { loading.value = false }
 }
+
+async function fetchData() {
+  const [, m, h] = await Promise.all([
+    fetchScreenings(0),
+    api.get<MovieOption[]>('/movies'),
+    api.get<HallOption[]>('/halls')
+  ])
+  movies.value = m.data; halls.value = h.data
+}
+
+function prevPage() { if (currentPage.value > 0) fetchScreenings(currentPage.value - 1) }
+function nextPage() { if (currentPage.value < totalPages.value - 1) fetchScreenings(currentPage.value + 1) }
 
 async function saveScreening() {
   error.value = ''
@@ -115,8 +126,8 @@ async function saveScreening() {
       const idx = screenings.value.findIndex(s => s.id === editingId.value)
       if (idx !== -1) screenings.value[idx] = data
     } else {
-      const { data } = await api.post<Screening>('/admin/screenings', payload)
-      screenings.value.unshift(data)
+      await api.post<Screening>('/admin/screenings', payload)
+      await fetchScreenings(0)
     }
     closeForm()
   } catch (e: any) {
@@ -217,7 +228,7 @@ onMounted(fetchData)
           </TableHeader>
           <TableBody>
             <TableEmpty v-if="screenings.length === 0">Brak seansów</TableEmpty>
-            <TableRow v-for="s in paged" :key="s.id">
+            <TableRow v-for="s in screenings" :key="s.id">
               <TableCell class="font-medium">{{ s.movie.title }}</TableCell>
               <TableCell class="text-muted-foreground">{{ s.hall.name }}</TableCell>
               <TableCell class="tabular-nums text-muted-foreground">{{ formatDate(s.startTime) }}</TableCell>
@@ -242,10 +253,10 @@ onMounted(fetchData)
           </TableBody>
         </Table>
         <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
-          <span class="text-sm text-muted-foreground">Strona {{ page }} z {{ totalPages }} ({{ screenings.length }} seansów)</span>
+          <span class="text-sm text-muted-foreground">Strona {{ currentPage + 1 }} z {{ totalPages }} ({{ totalElements }} seansów)</span>
           <div class="flex gap-2">
-            <Button variant="outline" size="sm" :disabled="page === 1" @click="page--">Poprzednia</Button>
-            <Button variant="outline" size="sm" :disabled="page === totalPages" @click="page++">Następna</Button>
+            <Button variant="outline" size="sm" :disabled="currentPage === 0" @click="prevPage">Poprzednia</Button>
+            <Button variant="outline" size="sm" :disabled="currentPage >= totalPages - 1" @click="nextPage">Następna</Button>
           </div>
         </div>
       </CardContent>

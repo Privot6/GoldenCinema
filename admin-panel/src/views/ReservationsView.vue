@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,11 @@ interface AdminReservation {
 const reservations = ref<AdminReservation[]>([])
 const loading = ref(false)
 const error = ref('')
+const currentPage = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
+
+interface PagedResponse<T> { content: T[]; page: number; totalPages: number; totalElements: number }
 
 function statusVariant(status: AdminReservation['status']) {
   if (status === 'POTWIERDZONA') return 'secondary'
@@ -52,24 +57,24 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(price)
 }
 
-const PAGE_SIZE = 25
-const page = ref(1)
-const paged = computed(() => reservations.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
-const totalPages = computed(() => Math.max(1, Math.ceil(reservations.value.length / PAGE_SIZE)))
-
-async function fetchReservations() {
+async function fetchReservations(p = currentPage.value) {
   loading.value = true
   error.value = ''
   try {
-    const { data } = await api.get<AdminReservation[]>('/admin/reservations')
-    reservations.value = data
-    page.value = 1
+    const { data } = await api.get<PagedResponse<AdminReservation>>('/admin/reservations', { params: { page: p, size: 20 } })
+    reservations.value = data.content
+    currentPage.value = data.page
+    totalPages.value = data.totalPages
+    totalElements.value = data.totalElements
   } catch {
     error.value = 'Nie udało się pobrać listy rezerwacji.'
   } finally {
     loading.value = false
   }
 }
+
+function prevPage() { if (currentPage.value > 0) fetchReservations(currentPage.value - 1) }
+function nextPage() { if (currentPage.value < totalPages.value - 1) fetchReservations(currentPage.value + 1) }
 
 async function updateStatus(reservation: AdminReservation, status: 'POTWIERDZONA' | 'ANULOWANA') {
   error.value = ''
@@ -82,14 +87,14 @@ async function updateStatus(reservation: AdminReservation, status: 'POTWIERDZONA
   }
 }
 
-onMounted(fetchReservations)
+onMounted(() => fetchReservations(0))
 </script>
 
 <template>
   <div class="p-6 space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">Rezerwacje</h1>
-      <Button variant="outline" size="sm" @click="fetchReservations" :disabled="loading" class="gap-2">
+      <Button variant="outline" size="sm" @click="fetchReservations(currentPage)" :disabled="loading" class="gap-2">
         <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
         Odśwież
       </Button>
@@ -103,7 +108,7 @@ onMounted(fetchReservations)
     <Card>
       <CardHeader class="pb-3">
         <CardTitle class="text-base">
-          {{ reservations.length > 0 ? `${reservations.length} rezerwacji` : 'Brak rezerwacji' }}
+          {{ totalElements > 0 ? `${totalElements} rezerwacji` : 'Brak rezerwacji' }}
         </CardTitle>
       </CardHeader>
       <CardContent class="p-0">
@@ -124,7 +129,7 @@ onMounted(fetchReservations)
           </TableHeader>
           <TableBody>
             <TableEmpty v-if="reservations.length === 0">Brak rezerwacji</TableEmpty>
-            <TableRow v-for="r in paged" :key="r.id">
+            <TableRow v-for="r in reservations" :key="r.id">
               <TableCell class="font-mono text-sm">{{ r.reservationCode }}</TableCell>
               <TableCell>
                 <div class="font-medium">{{ r.userFirstName }} {{ r.userLastName }}</div>
@@ -165,10 +170,10 @@ onMounted(fetchReservations)
           </TableBody>
         </Table>
         <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
-          <span class="text-sm text-muted-foreground">Strona {{ page }} z {{ totalPages }} ({{ reservations.length }} rezerwacji)</span>
+          <span class="text-sm text-muted-foreground">Strona {{ currentPage + 1 }} z {{ totalPages }} ({{ totalElements }} rezerwacji)</span>
           <div class="flex gap-2">
-            <Button variant="outline" size="sm" :disabled="page === 1" @click="page--">Poprzednia</Button>
-            <Button variant="outline" size="sm" :disabled="page === totalPages" @click="page++">Następna</Button>
+            <Button variant="outline" size="sm" :disabled="currentPage === 0" @click="prevPage">Poprzednia</Button>
+            <Button variant="outline" size="sm" :disabled="currentPage >= totalPages - 1" @click="nextPage">Następna</Button>
           </div>
         </div>
       </CardContent>

@@ -1,11 +1,15 @@
 package com.goldencinema.backend.service;
 
 import com.goldencinema.backend.dto.AdminReservationDto;
+import com.goldencinema.backend.dto.PagedResponse;
 import com.goldencinema.backend.entity.Reservation;
 import com.goldencinema.backend.entity.ReservationStatus;
 import com.goldencinema.backend.entity.User;
 import com.goldencinema.backend.repository.ReservationRepository;
 import com.goldencinema.backend.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +35,20 @@ public class AdminReservationService {
         return reservationRepository.findAllWithEagerLoad().stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<AdminReservationDto> getAllReservationsPaged(int page, int size) {
+        Page<Reservation> result = reservationRepository.findAllWithEagerLoad(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return new PagedResponse<>(
+                result.getContent().stream().map(this::toDto).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
     }
 
     @Transactional

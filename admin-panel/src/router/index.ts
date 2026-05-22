@@ -7,6 +7,7 @@ import MoviesView from '@/views/MoviesView.vue'
 import ScreeningsView from '@/views/ScreeningsView.vue'
 import UsersView from '@/views/UsersView.vue'
 import ReservationsView from '@/views/ReservationsView.vue'
+import ReportsView from '@/views/ReportsView.vue'
 import AdminLayout from '@/components/AdminLayout.vue'
 
 const router = createRouter({
@@ -65,6 +66,11 @@ const router = createRouter({
           path: 'reservations',
           name: 'reservations',
           component: ReservationsView
+        },
+        {
+          path: 'reports',
+          name: 'reports',
+          component: ReportsView
         }
       ]
     }
