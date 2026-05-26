@@ -1,4 +1,4 @@
-﻿package com.example.goldencinema
+package com.example.goldencinema
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -8,90 +8,84 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.goldencinema.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.goldencinema.ui.theme.CinemaGold
 import com.example.goldencinema.ui.theme.DarkBackground
 
-// 1. MODEL DANYCH REZERWACJI
-data class Reservation(
-    val id: String,
-    val movieTitle: String,
-    val date: String,
-    val time: String,
-    val seats: String,
-    val hall: String
-)
+private fun formatDateTime(iso: String): String {
+    if (iso.length < 16) return iso
+    val date = iso.substring(0, 10)
+    val time = iso.substring(11, 16)
+    return "$date  $time"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyReservationsScreen() {
-    // Przykładowe dane
-    val reservations = listOf(
-        Reservation("1", "Diuna: Część Druga", "15 Maj 2024", "18:00", "Rząd 4, Miejsce 12, 13", "Potwierdzona"),
-        Reservation("2", "Deadpool & Wolverine", "20 Maj 2024", "20:30", "Rząd 8, Miejsce 15", "Oczekująca")
-    )
+fun MyReservationsScreen(
+    navController: NavController,
+    viewModel: ReservationsViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = DarkBackground
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Nagłówek i przycisk powrotu
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { /* Powrót do profilu/menu */ }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = CinemaGold)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(stringResource(R.string.my_reservations_title), color = Color.White, fontWeight = FontWeight.Bold)
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+            )
+        },
+        bottomBar = { MainBottomBar(navController, "my-reservations") },
+        containerColor = DarkBackground
+    ) { padding ->
+        when (val s = state) {
+            is ReservationsUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = CinemaGold)
                 }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Tytuł ekranu
-                Text(
-                    text = stringResource(R.string.my_reservations_title),
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
             }
-
-            // Główna zawartość
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Jeśli brak rezerwacji
-                if (reservations.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.my_reservations_empty),
-                            color = Color.Gray,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(16.dp)
-                        )
+            is ReservationsUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(s.message, color = Color.Red, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { viewModel.loadMyReservations() },
+                            colors = ButtonDefaults.buttonColors(containerColor = CinemaGold)
+                        ) {
+                            Text(stringResource(R.string.retry_button), color = Color.Black)
+                        }
+                    }
+                }
+            }
+            is ReservationsUiState.Success -> {
+                if (s.reservations.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.my_reservations_empty), color = Color.Gray, fontSize = 16.sp)
                     }
                 } else {
-                    items(reservations) { reservation ->
-                        ReservationTicket(reservation)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(s.reservations) { reservation ->
+                            ReservationTicket(reservation)
+                        }
                     }
                 }
             }
@@ -100,86 +94,119 @@ fun MyReservationsScreen() {
 }
 
 @Composable
-fun ReservationTicket(reservation: Reservation) {
+fun ReservationTicket(reservation: ReservationResponseDto) {
     var isExpanded by remember { mutableStateOf(false) }
 
+    val seats = reservation.reservedSeatsDto
+        .joinToString(", ") { "${it.rowLabel}${it.seatNumber}" }
+
+    val movie = reservation.screeningDto.movie
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded },
+        modifier = Modifier.fillMaxWidth().clickable { isExpanded = !isExpanded },
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
         shape = RoundedCornerShape(16.dp),
         border = if (isExpanded) BorderStroke(1.dp, CinemaGold) else null
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            // NAGŁÓWEK BILETU (Zawsze widoczny)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(text = reservation.movieTitle, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text(text = reservation.date, color = Color.Gray, fontSize = 14.sp)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                if (!movie.posterUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = movie.posterUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(width = 56.dp, height = 80.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 56.dp, height = 80.dp)
+                            .background(Color.DarkGray, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = movie.genre.take(3).uppercase(),
+                            color = CinemaGold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-                Text(text = reservation.time, color = CinemaGold, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = movie.title,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = formatDateTime(reservation.screeningDto.startTime),
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = reservation.reservationCode,
+                                color = CinemaGold,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Text(
+                                text = reservation.status,
+                                color = when (reservation.status) {
+                                    "POTWIERDZONA" -> Color(0xFF4CAF50)
+                                    "ANULOWANA", "WYGASLA" -> Color(0xFFE53935)
+                                    else -> Color.Gray
+                                },
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                }
             }
 
-            // SZCZEGÓŁY (Widoczne po kliknięciu)
             AnimatedVisibility(visible = isExpanded) {
                 Column {
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(color = Color.DarkGray)
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column {
                             Text(stringResource(R.string.ticket_seat_label), color = Color.Gray, fontSize = 12.sp)
-                            Text(reservation.seats, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-
+                            Text(seats.ifEmpty { "—" }, color = Color.White, fontSize = 14.sp)
                             Spacer(modifier = Modifier.height(8.dp))
-
                             Text(stringResource(R.string.ticket_hall_label), color = Color.Gray, fontSize = 12.sp)
-                            Text(reservation.hall, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            Text(reservation.screeningDto.hall.name, color = Color.White, fontSize = 14.sp)
                         }
-
-                        // PLACEHOLDER NA KOD QR
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .background(Color.White, RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.QrCode2,
-                                contentDescription = "Kod QR",
-                                modifier = Modifier.size(60.dp),
-                                tint = Color.Black
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("Łącznie", color = Color.Gray, fontSize = 12.sp)
+                            Text(
+                                text = "${"%.2f".format(reservation.totalPrice)} PLN",
+                                color = CinemaGold,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.ticket_qr_help),
-                        color = CinemaGold,
-                        fontSize = 11.sp,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
                 }
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun MyReservationsPreview() {
-    MyReservationsScreen()
 }

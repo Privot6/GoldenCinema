@@ -21,11 +21,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.goldencinema.ui.theme.CinemaGold
 import com.example.goldencinema.ui.theme.DarkBackground
 
 @Composable
-fun RegisterScreen() {
+fun RegisterScreen(navController: NavController) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -160,15 +161,14 @@ fun RegisterScreen() {
                 text = stringResource(R.string.has_account_link),
                 color = Color.LightGray,
                 fontSize = 14.sp,
-                modifier = Modifier.clickable { /* TODO: Nawigacja na LoginScreen */ }
+                modifier = Modifier.clickable { navController.popBackStack() }
             )
         }
     }
 }
 
-// 9. PODGLĄD 
 @Preview
 @Composable
 fun RegisterScreenPreview() {
-    RegisterScreen()
+    RegisterScreen(navController = androidx.navigation.compose.rememberNavController())
 }

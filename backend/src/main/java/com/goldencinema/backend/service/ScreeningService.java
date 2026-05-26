@@ -95,7 +95,8 @@ public class ScreeningService {
                     seat.getId(),
                     seat.getRowLabel(),
                     seat.getSeatNumber(),
-                    !reservedSeatIds.contains(seat.getId())
+                    !reservedSeatIds.contains(seat.getId()),
+                    seat.getGridCol()
             );
 
             groupedSeats
