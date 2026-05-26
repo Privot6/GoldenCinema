@@ -1,70 +1,110 @@
-﻿package com.example.goldencinema
+package com.example.goldencinema
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.goldencinema.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.goldencinema.ui.theme.CinemaGold
 import com.example.goldencinema.ui.theme.DarkBackground
 
-enum class SeatStatus {
-    Available, // Zielony
-    Occupied,  // Czerwony
-    Selected   // Niebieski
-}
-
-data class Seat(
-    val row: Int,
-    val column: Int,
-    var status: SeatStatus
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SeatSelectionScreen() {
-    // 1. Logika wyboru miejsc (PrzykĹ‚adowe dane: 8 rzÄ™dĂłw po 10 miejsc)
-    val totalRows = 8
-    val totalCols = 10
+fun SeatSelectionScreen(
+    screeningId: Long,
+    basePrice: Double,
+    navController: NavController,
+    viewModel: SeatSelectionViewModel = viewModel(
+        factory = SeatSelectionViewModelFactory(screeningId, basePrice)
+    )
+) {
+    val seatsState by viewModel.seatsState.collectAsState()
+    val selectedSeatIds by viewModel.selectedSeatIds.collectAsState()
+    val totalPrice by viewModel.totalPrice.collectAsState()
+    val reservationState by viewModel.reservationState.collectAsState()
 
-    // Lista miejsc w stanie "remember", ĹĽeby Compose wiedziaĹ‚, kiedy przerysowaÄ‡ ekran
-    val seats = remember {
-        mutableStateListOf<Seat>().apply {
-            for (r in 1..totalRows) {
-                for (c in 1..totalCols) {
-                    // Losujemy kilka zajÄ™tych miejsc dla realizmu
-                    val initialStatus = if ((r+c) % 7 == 0) SeatStatus.Occupied else SeatStatus.Available
-                    add(Seat(r, c, initialStatus))
-                }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(reservationState) {
+        when (val state = reservationState) {
+            is ReservationUiState.Conflict -> {
+                viewModel.loadSeats()
+                snackbarHostState.showSnackbar(state.message)
+                viewModel.resetReservationState()
             }
+            is ReservationUiState.Error -> {
+                snackbarHostState.showSnackbar(state.message)
+                viewModel.resetReservationState()
+            }
+            else -> {}
         }
     }
 
+    if (reservationState is ReservationUiState.Success) {
+        val code = (reservationState as ReservationUiState.Success).code
+        AlertDialog(
+            onDismissRequest = {},
+            containerColor = Color(0xFF1E1E1E),
+            title = {
+                Text(
+                    stringResource(R.string.reservation_confirmed),
+                    color = CinemaGold,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "${stringResource(R.string.reservation_code_label)} $code",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.resetReservationState()
+                        navController.navigate("my-reservations") {
+                            popUpTo("repertuar") { inclusive = false }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = CinemaGold)
+                ) {
+                    Text(stringResource(R.string.ok_button), color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.seat_selection_title), color = Color.White, fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        stringResource(R.string.seat_selection_title),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = { /* Tu bÄ™dzie powrĂłt do repertuaru */ }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Cofnij",
-                            tint = CinemaGold
-                        )
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Cofnij", tint = CinemaGold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
@@ -79,7 +119,6 @@ fun SeatSelectionScreen() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. EKRAN KINOWY
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -87,63 +126,107 @@ fun SeatSelectionScreen() {
                     .background(Color.DarkGray, RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(stringResource(R.string.seat_screen), color = Color.LightGray, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
+                Text(
+                    stringResource(R.string.seat_screen),
+                    color = Color.LightGray,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 4.sp
+                )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. SIATKA MIEJSC
-            Box(modifier = Modifier.weight(1f)) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(totalCols),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(seats.size) { index ->
-                        val seat = seats[index]
+            val horizontalScrollState = rememberScrollState()
 
-                        // Kolor fotela zaleĹĽny od statusu
-                        val color = when (seat.status) {
-                            SeatStatus.Available -> Color(0xFF4CAF50) // Zielony
-                            SeatStatus.Occupied -> Color(0xFFE53935)  // Czerwony
-                            SeatStatus.Selected -> Color(0xFF2196F3)  // Niebieski
+            when (val state = seatsState) {
+                is SeatsUiState.Loading -> {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = CinemaGold)
+                    }
+                }
+                is SeatsUiState.Error -> {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(state.message, color = Color.Red, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { viewModel.loadSeats() },
+                                colors = ButtonDefaults.buttonColors(containerColor = CinemaGold)
+                            ) {
+                                Text(stringResource(R.string.retry_button), color = Color.Black)
+                            }
                         }
+                    }
+                }
+                is SeatsUiState.Success -> {
+                    val allSeats = state.rows.flatMap { it.seats }
+                    val maxCol = allSeats.mapNotNull { it.gridCol }.maxOrNull()
 
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .background(color, RoundedCornerShape(4.dp))
-                                .clickable(enabled = seat.status != SeatStatus.Occupied) {
-                                    // PrzeĹ‚Ä…czanie statusu: Available <-> Selected
-                                    seats[index] = seat.copy(
-                                        status = if (seat.status == SeatStatus.Selected) SeatStatus.Available else SeatStatus.Selected
-                                    )
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 4.dp)
+                    ) {
+                        items(state.rows) { seatRow ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.horizontalScroll(horizontalScrollState)
+                            ) {
+                                Text(
+                                    text = seatRow.rowLabel,
+                                    color = Color.Gray,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.width(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                if (maxCol != null) {
+                                    val colMap = seatRow.seats.associateBy { it.gridCol }
+                                    for (col in 1..maxCol) {
+                                        val seat = colMap[col]
+                                        if (seat != null) {
+                                            SeatBox(
+                                                seat = seat,
+                                                isSelected = seat.id in selectedSeatIds,
+                                                onClick = { viewModel.toggleSeat(seat) }
+                                            )
+                                        } else {
+                                            Box(modifier = Modifier.size(28.dp))
+                                        }
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
+                                } else {
+                                    seatRow.seats.forEach { seat ->
+                                        SeatBox(
+                                            seat = seat,
+                                            isSelected = seat.id in selectedSeatIds,
+                                            onClick = { viewModel.toggleSeat(seat) }
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
                                 }
-                        )
+                            }
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. LEGENDA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                LegendItem(color = Color.DarkGray, label = stringResource(R.string.seat_free))
-                LegendItem(color = Color.Red.copy(alpha = 0.7f), label = stringResource(R.string.seat_taken))
-                LegendItem(color = CinemaGold, label = stringResource(R.string.seat_selected))
+                LegendItem(color = Color(0xFF4CAF50), label = stringResource(R.string.seat_free))
+                LegendItem(color = Color(0xFFE53935), label = stringResource(R.string.seat_taken))
+                LegendItem(color = Color(0xFF2196F3), label = stringResource(R.string.seat_selected))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider(color = Color.DarkGray)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. PODSUMOWANIE I PRZYCISK
-            val selectedCount = seats.count { it.status == SeatStatus.Selected }
-            val totalPrice = selectedCount * 25 // 25 PLN za bilet (przykładowo)
+            val selectedCount = selectedSeatIds.size
+            val isReserving = reservationState is ReservationUiState.Loading
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -151,13 +234,21 @@ fun SeatSelectionScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(text = "${stringResource(R.string.ticket_count)} $selectedCount", color = Color.Gray, fontSize = 14.sp)
-                    Text(text = "${stringResource(R.string.total_price)} $totalPrice PLN", color = CinemaGold, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "${stringResource(R.string.ticket_count)} $selectedCount",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = "${stringResource(R.string.total_price)} ${"%.2f".format(totalPrice)} PLN",
+                        color = CinemaGold,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-
                 Button(
-                    onClick = { /* TODO: Zapisz rezerwację */ },
-                    enabled = selectedCount > 0,
+                    onClick = { viewModel.reserve() },
+                    enabled = selectedCount > 0 && !isReserving,
                     modifier = Modifier.height(50.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = CinemaGold,
@@ -165,10 +256,32 @@ fun SeatSelectionScreen() {
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(stringResource(R.string.reserve_button), color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    if (isReserving) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.reserve_button), color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SeatBox(seat: SeatDto, isSelected: Boolean, onClick: () -> Unit) {
+    val color = when {
+        !seat.isAvailable -> Color(0xFFE53935)
+        isSelected -> Color(0xFF2196F3)
+        else -> Color(0xFF4CAF50)
+    }
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .background(color, RoundedCornerShape(4.dp))
+            .clickable(enabled = seat.isAvailable) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "${seat.seatNumber}", color = Color.White.copy(alpha = 0.8f), fontSize = 8.sp)
     }
 }
 
@@ -179,10 +292,4 @@ fun LegendItem(label: String, color: Color) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(label, color = Color.Gray, fontSize = 12.sp)
     }
-}
-
-@Preview
-@Composable
-fun SeatPreview() {
-    SeatSelectionScreen()
 }

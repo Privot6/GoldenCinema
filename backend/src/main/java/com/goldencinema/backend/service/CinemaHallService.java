@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CinemaHallService {
@@ -73,19 +75,27 @@ public class CinemaHallService {
         hall.setName(request.getName());
         hall.setUpdatedAt(LocalDateTime.now());
 
-        // remove all existing seats via orphanRemoval
-        List<Seat> existing = seatRepository.findAllByHallId(id);
-        seatRepository.deleteAll(existing);
-        seatRepository.flush();
+        // Index existing seats by grid position so we can reuse their IDs.
+        // Reusing IDs keeps reservation_seats FK references intact.
+        List<Seat> existingSeats = seatRepository.findAllByHallId(id);
+        Map<String, Seat> byPos = new HashMap<>();
+        for (Seat s : existingSeats) {
+            if (s.getGridRow() != null && s.getGridCol() != null) {
+                byPos.put(s.getGridRow() + ":" + s.getGridCol(), s);
+            }
+        }
 
-        int maxRow = request.getSeats().stream().mapToInt(SeatGridItemDto::getGridRow).max().orElse(0);
-        int maxCol = request.getSeats().stream().mapToInt(SeatGridItemDto::getGridCol).max().orElse(0);
-        hall.setRowsCount(maxRow + 1);
-        hall.setSeatsPerRow(maxCol + 1);
-        hall = hallRepository.save(hall);
+        // Deactivate all existing seats; reactivate or create below.
+        existingSeats.forEach(s -> s.setIsActive(false));
+        seatRepository.saveAll(existingSeats);
 
+        int maxRow = 0, maxCol = 0;
         for (SeatGridItemDto dto : request.getSeats()) {
-            Seat seat = new Seat();
+            if (dto.getGridRow() > maxRow) maxRow = dto.getGridRow();
+            if (dto.getGridCol() > maxCol) maxCol = dto.getGridCol();
+
+            String key = dto.getGridRow() + ":" + dto.getGridCol();
+            Seat seat = byPos.getOrDefault(key, new Seat());
             seat.setHall(hall);
             seat.setGridRow(dto.getGridRow());
             seat.setGridCol(dto.getGridCol());
@@ -94,6 +104,10 @@ public class CinemaHallService {
             seat.setIsActive(true);
             seatRepository.save(seat);
         }
+
+        hall.setRowsCount(maxRow + 1);
+        hall.setSeatsPerRow(maxCol + 1);
+        hall = hallRepository.save(hall);
 
         return buildLayoutResponse(hall);
     }
@@ -107,6 +121,7 @@ public class CinemaHallService {
 
     private CinemaHallLayoutResponse buildLayoutResponse(CinemaHall hall) {
         List<SeatGridItemDto> seats = seatRepository.findAllByHallId(hall.getId()).stream()
+                .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
                 .map(s -> new SeatGridItemDto(s.getGridRow(), s.getGridCol(), s.getRowLabel(), s.getSeatNumber()))
                 .toList();
         return new CinemaHallLayoutResponse(hall.getId(), hall.getName(), seats);
