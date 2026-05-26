@@ -37,6 +37,9 @@ class MainActivity : ComponentActivity() {
                     composable("my-reservations") {
                         MyReservationsScreen(navController)
                     }
+                    composable("profile") {
+                        ProfileScreen(navController)
+                    }
                 }
             }
         }
