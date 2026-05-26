@@ -61,6 +61,7 @@ fun ProfileScreen(
                 val firstName = s.profile.firstName.orEmpty()
                 val lastName  = s.profile.lastName.orEmpty()
                 val email     = s.profile.email.orEmpty()
+                val phone     = s.profile.phone.orEmpty()
 
                 Column(
                     modifier = Modifier
@@ -117,6 +118,10 @@ fun ProfileScreen(
                             }
                             if (lastName.isNotEmpty()) {
                                 ProfileInfoRow("Nazwisko", lastName)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.DarkGray)
+                            }
+                            if (phone.isNotEmpty()) {
+                                ProfileInfoRow("Telefon", phone)
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.DarkGray)
                             }
                             ProfileInfoRow("Email", email)

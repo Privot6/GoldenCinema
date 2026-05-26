@@ -72,4 +72,6 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.coil.compose)
+    implementation(libs.zxing.core)
+    implementation(libs.androidx.startup.runtime)
 }
