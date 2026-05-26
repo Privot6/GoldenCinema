@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,9 +29,21 @@ import com.example.goldencinema.ui.theme.DarkBackground
 
 private fun formatDateTime(iso: String): String {
     if (iso.length < 16) return iso
-    val date = iso.substring(0, 10)
-    val time = iso.substring(11, 16)
-    return "$date  $time"
+    val datePart = iso.substring(0, 10)
+    val timePart = iso.substring(11, 16)
+    val parts = datePart.split("-")
+    return if (parts.size == 3) "${parts[2]}.${parts[1]}.${parts[0]} $timePart" else "$datePart $timePart"
+}
+
+private fun statusColor(status: String): Color = when (status) {
+    "POTWIERDZONA" -> Color(0xFF4CAF50)
+    "OCZEKUJACA"   -> Color(0xFFFFC107)
+    else           -> Color(0xFF757575)
+}
+
+private fun statusTextColor(status: String): Color = when (status) {
+    "OCZEKUJACA" -> Color.Black
+    else         -> Color.White
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +53,8 @@ fun MyReservationsScreen(
     viewModel: ReservationsViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullState = rememberPullToRefreshState()
 
     Scaffold(
         topBar = {
@@ -73,18 +89,25 @@ fun MyReservationsScreen(
                 }
             }
             is ReservationsUiState.Success -> {
-                if (s.reservations.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                        Text(stringResource(R.string.my_reservations_empty), color = Color.Gray, fontSize = 16.sp)
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-                        contentPadding = PaddingValues(vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(s.reservations) { reservation ->
-                            ReservationTicket(reservation)
+                PullToRefreshBox(
+                    state = pullState,
+                    isRefreshing = isRefreshing,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize().padding(padding)
+                ) {
+                    if (s.reservations.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(stringResource(R.string.my_reservations_empty), color = Color.Gray, fontSize = 16.sp)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(s.reservations) { reservation ->
+                                ReservationTicket(reservation)
+                            }
                         }
                     }
                 }
@@ -138,40 +161,40 @@ fun ReservationTicket(reservation: ReservationResponseDto) {
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = movie.title,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = formatDateTime(reservation.screeningDto.startTime),
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = movie.title,
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = formatDateTime(reservation.screeningDto.startTime),
-                                color = Color.Gray,
-                                fontSize = 12.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = reservation.reservationCode,
-                                color = CinemaGold,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
+                        Text(
+                            text = reservation.reservationCode,
+                            color = CinemaGold,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Surface(
+                            color = statusColor(reservation.status),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
                             Text(
                                 text = reservation.status,
-                                color = when (reservation.status) {
-                                    "POTWIERDZONA" -> Color(0xFF4CAF50)
-                                    "ANULOWANA", "WYGASLA" -> Color(0xFFE53935)
-                                    else -> Color.Gray
-                                },
-                                fontSize = 11.sp
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                color = statusTextColor(reservation.status),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }

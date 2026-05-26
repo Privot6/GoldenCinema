@@ -17,6 +17,9 @@ class ReservationsViewModel : ViewModel() {
     private val _state = MutableStateFlow<ReservationsUiState>(ReservationsUiState.Loading)
     val state: StateFlow<ReservationsUiState> = _state.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         loadMyReservations()
     }
@@ -29,6 +32,20 @@ class ReservationsViewModel : ViewModel() {
                 _state.value = ReservationsUiState.Success(reservations)
             } catch (e: Exception) {
                 _state.value = ReservationsUiState.Error(e.message ?: "Błąd pobierania rezerwacji")
+            }
+        }
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val reservations = NetworkModule.reservationApi.getMyReservations()
+                _state.value = ReservationsUiState.Success(reservations)
+            } catch (e: Exception) {
+                _state.value = ReservationsUiState.Error(e.message ?: "Błąd pobierania rezerwacji")
+            } finally {
+                _isRefreshing.value = false
             }
         }
     }

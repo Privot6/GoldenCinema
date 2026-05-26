@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 // ── Auth ──────────────────────────────────────────────────────────────────────
 data class LoginRequest(val email: String, val password: String)
 data class LoginResponse(val token: String, val type: String)
+data class UserProfileDto(val email: String?, val firstName: String?, val lastName: String?)
 
 // ── Screenings ─────────────────────────────────────────────────────────────────
 data class ScreeningDto(
