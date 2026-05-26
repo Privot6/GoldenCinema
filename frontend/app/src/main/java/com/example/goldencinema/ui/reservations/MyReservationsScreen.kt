@@ -2,6 +2,7 @@ package com.example.goldencinema
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +28,9 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.goldencinema.ui.theme.CinemaGold
 import com.example.goldencinema.ui.theme.DarkBackground
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
 
 private fun formatDateTime(iso: String): String {
     if (iso.length < 16) return iso
@@ -44,6 +49,18 @@ private fun statusColor(status: String): Color = when (status) {
 private fun statusTextColor(status: String): Color = when (status) {
     "OCZEKUJACA" -> Color.Black
     else         -> Color.White
+}
+
+private fun generateQrBitmap(code: String): androidx.compose.ui.graphics.ImageBitmap {
+    val hints = mapOf(EncodeHintType.MARGIN to 1)
+    val bitMatrix = QRCodeWriter().encode(code, BarcodeFormat.QR_CODE, 512, 512, hints)
+    val bmp = android.graphics.Bitmap.createBitmap(512, 512, android.graphics.Bitmap.Config.ARGB_8888)
+    for (x in 0 until 512) {
+        for (y in 0 until 512) {
+            bmp.setPixel(x, y, if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+    }
+    return bmp.asImageBitmap()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,11 +136,57 @@ fun MyReservationsScreen(
 @Composable
 fun ReservationTicket(reservation: ReservationResponseDto) {
     var isExpanded by remember { mutableStateOf(false) }
+    var showQrDialog by remember { mutableStateOf(false) }
 
     val seats = reservation.reservedSeatsDto
         .joinToString(", ") { "${it.rowLabel}${it.seatNumber}" }
-
     val movie = reservation.screeningDto.movie
+    val canShowQr = reservation.status == "OCZEKUJACA" || reservation.status == "POTWIERDZONA"
+
+    if (showQrDialog) {
+        AlertDialog(
+            onDismissRequest = { showQrDialog = false },
+            containerColor = Color(0xFF1E1E1E),
+            title = {
+                Text("Twój bilet QR", color = Color.White, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val qrBitmap = remember(reservation.reservationCode) {
+                        generateQrBitmap(reservation.reservationCode)
+                    }
+                    Image(
+                        bitmap = qrBitmap,
+                        contentDescription = "Kod QR rezerwacji",
+                        modifier = Modifier
+                            .size(240.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = reservation.reservationCode,
+                        color = CinemaGold,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.ticket_qr_help),
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showQrDialog = false }) {
+                    Text(stringResource(R.string.ok_button), color = CinemaGold)
+                }
+            }
+        )
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable { isExpanded = !isExpanded },
@@ -226,6 +289,20 @@ fun ReservationTicket(reservation: ReservationResponseDto) {
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                        }
+                    }
+
+                    if (canShowQr) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { showQrDialog = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = CinemaGold),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Pokaż QR", color = Color.Black, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

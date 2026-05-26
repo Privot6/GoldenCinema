@@ -3,7 +3,6 @@ package com.goldencinema.backend.controller;
 import com.goldencinema.backend.dto.LoginRequest;
 import com.goldencinema.backend.dto.LoginResponse;
 import com.goldencinema.backend.dto.RegisterRequest;
-import com.goldencinema.backend.dto.RegisterResponse;
 import com.goldencinema.backend.entity.User;
 import com.goldencinema.backend.repository.UserRepository;
 import com.goldencinema.backend.service.AuthService;
@@ -35,7 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
