@@ -1,5 +1,7 @@
 package com.example.goldencinema
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,6 +43,7 @@ fun SeatSelectionScreen(
     val reservationState by viewModel.reservationState.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(reservationState) {
         when (val state = reservationState) {
@@ -56,28 +60,44 @@ fun SeatSelectionScreen(
         }
     }
 
-    if (reservationState is ReservationUiState.Success) {
-        val code = (reservationState as ReservationUiState.Success).code
+    if (reservationState is ReservationUiState.ReadyForPayment) {
+        val paymentState = reservationState as ReservationUiState.ReadyForPayment
         AlertDialog(
             onDismissRequest = {},
             containerColor = Color(0xFF1E1E1E),
             title = {
                 Text(
-                    stringResource(R.string.reservation_confirmed),
+                    stringResource(R.string.payment_required_title),
                     color = CinemaGold,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Text(
-                    "${stringResource(R.string.reservation_code_label)} $code",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
+                Column {
+                    Text(
+                        "${stringResource(R.string.reservation_code_label)} ${paymentState.reservationCode}",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "${stringResource(R.string.total_price)} ${"%.2f".format(paymentState.totalPrice)} PLN",
+                        color = CinemaGold,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        stringResource(R.string.payment_instructions),
+                        color = Color.LightGray,
+                        fontSize = 13.sp
+                    )
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(paymentState.paymentUrl)))
                         viewModel.resetReservationState()
                         navController.navigate("my-reservations") {
                             popUpTo("repertuar") { inclusive = false }
@@ -85,7 +105,19 @@ fun SeatSelectionScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = CinemaGold)
                 ) {
-                    Text(stringResource(R.string.ok_button), color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.pay_now_button), color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.resetReservationState()
+                        navController.navigate("my-reservations") {
+                            popUpTo("repertuar") { inclusive = false }
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.pay_later_button), color = Color.Gray)
                 }
             }
         )

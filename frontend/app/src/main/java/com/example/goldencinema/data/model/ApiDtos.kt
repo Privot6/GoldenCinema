@@ -57,6 +57,17 @@ data class CreateReservationRequest(
     val ticketTypes: List<String>   // "NORMALNY" | "ULGOWY"
 )
 
+// Response from POST /api/reservations — contains Stripe checkout URL
+data class CreateReservationResponseDto(
+    @SerializedName("reservationId") val id: Long,
+    val reservationCode: String,
+    val status: String,
+    val totalPrice: Double,
+    val paymentUrl: String,
+    val sessionId: String
+)
+
+// Response from GET /api/reservations/my
 data class ReservationResponseDto(
     val id: Long,
     val reservationCode: String,
@@ -65,6 +76,9 @@ data class ReservationResponseDto(
     val screeningDto: ScreeningDto,
     val reservedSeatsDto: List<ReservedSeatDto>
 )
+
+// Response from GET /api/reservations/{id}/checkout
+data class CheckoutUrlDto(val paymentUrl: String)
 
 data class ReservedSeatDto(
     val seatId: Long,
