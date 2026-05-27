@@ -1,26 +1,15 @@
 package com.goldencinema.backend.service;
 
-import com.goldencinema.backend.dto.CreateReservationRequest;
-import com.goldencinema.backend.dto.HallDto;
-import com.goldencinema.backend.dto.MovieDto;
-import com.goldencinema.backend.dto.ReservationResponse;
-import com.goldencinema.backend.dto.ReservedSeatDto;
-import com.goldencinema.backend.dto.ScreeningResponse;
-import com.goldencinema.backend.entity.PriceList;
-import com.goldencinema.backend.entity.Reservation;
-import com.goldencinema.backend.entity.ReservationSeat;
-import com.goldencinema.backend.entity.ReservationStatus;
-import com.goldencinema.backend.entity.Screening;
-import com.goldencinema.backend.entity.Seat;
-import com.goldencinema.backend.entity.TicketType;
-import com.goldencinema.backend.entity.User;
-import com.goldencinema.backend.repository.PriceListRepository;
-import com.goldencinema.backend.repository.ReservationRepository;
-import com.goldencinema.backend.repository.ReservationSeatRepository;
-import com.goldencinema.backend.repository.ScreeningRepository;
-import com.goldencinema.backend.repository.SeatRepository;
-import com.goldencinema.backend.repository.UserRepository;
+import com.goldencinema.backend.dto.*;
+import com.goldencinema.backend.entity.*;
+import com.goldencinema.backend.repository.*;
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,6 +30,15 @@ public class ReservationService {
     private final PriceListRepository priceListRepository;
     private final UserRepository userRepository;
 
+    @Value("${stripe.apiKey}")
+    private String stripeApiKey;
+
+    @Value("${stripe.successUrl:http://localhost:3000/success}")
+    private String stripeSuccessUrl;
+
+    @Value("${stripe.cancelUrl:http://localhost:3000/cancel}")
+    private String stripeCancelUrl;
+
     public ReservationService(ReservationRepository reservationRepository,
                               ReservationSeatRepository reservationSeatRepository,
                               ScreeningRepository screeningRepository,
@@ -55,7 +53,8 @@ public class ReservationService {
         this.userRepository = userRepository;
     }
 
-    public ReservationResponse createReservation(CreateReservationRequest request) {
+    public ReservationPaymentResponse createReservationPayment(CreateReservationRequest request,
+                                                               Authentication authentication) throws StripeException {
         validateRequest(request);
 
         User user = getCurrentUser();
@@ -114,7 +113,47 @@ public class ReservationService {
 
         Reservation savedReservation = reservationRepository.save(reservation);
 
-        return mapToReservationResponse(savedReservation);
+        // Tworzenie sesji Stripe
+        Stripe.apiKey = stripeApiKey;
+
+        long amountInCents = savedReservation.getTotalPrice()
+                .multiply(new BigDecimal(100))
+                .longValue();
+
+        SessionCreateParams.LineItem.PriceData.ProductData product =
+                SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                        .setName("Rezerwacja " + savedReservation.getReservationCode() + " - " +
+                                screening.getMovie().getTitle())
+                        .build();
+
+        SessionCreateParams params = SessionCreateParams.builder()
+                .addLineItem(SessionCreateParams.LineItem.builder()
+                        .setPriceData(
+                                SessionCreateParams.LineItem.PriceData.builder()
+                                        .setCurrency("pln")
+                                        .setUnitAmount(amountInCents)
+                                        .setProductData(product)
+                                        .build()
+                        )
+                        .setQuantity(1L)
+                        .build())
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(stripeSuccessUrl + "?session_id={CHECKOUT_SESSION_ID}")
+                .setCancelUrl(stripeCancelUrl)
+                .putMetadata("reservationId", savedReservation.getId().toString())
+                .putMetadata("reservationCode", savedReservation.getReservationCode())
+                .build();
+
+        Session session = Session.create(params);
+
+        return new ReservationPaymentResponse(
+                savedReservation.getId(),
+                savedReservation.getReservationCode(),
+                savedReservation.getStatus(),
+                savedReservation.getTotalPrice(),
+                session.getUrl(),
+                session.getId()
+        );
     }
 
     public List<ReservationResponse> getMyReservations() {

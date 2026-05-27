@@ -1,9 +1,12 @@
 package com.goldencinema.backend.controller;
 
 import com.goldencinema.backend.dto.CreateReservationRequest;
+import com.goldencinema.backend.dto.ReservationPaymentResponse;
 import com.goldencinema.backend.dto.ReservationResponse;
 import com.goldencinema.backend.service.ReservationService;
+import com.stripe.exception.StripeException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,8 +23,8 @@ public class ReservationController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ReservationResponse createReservation(@RequestBody CreateReservationRequest request) {
-        return reservationService.createReservation(request);
+    public ReservationPaymentResponse createReservation(@RequestBody CreateReservationRequest request, Authentication authentication) throws StripeException {
+        return reservationService.createReservationPayment(request, authentication);
     }
 
     @GetMapping("/my")
