@@ -56,7 +56,7 @@ function openEdit(m: Movie) {
 
 function closeForm() { showForm.value = false; resetForm() }
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 20
 const page = ref(1)
 const paged = computed(() => movies.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
 const totalPages = computed(() => Math.max(1, Math.ceil(movies.value.length / PAGE_SIZE)))

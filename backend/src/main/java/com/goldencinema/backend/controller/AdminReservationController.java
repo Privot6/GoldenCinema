@@ -1,12 +1,11 @@
 package com.goldencinema.backend.controller;
 
 import com.goldencinema.backend.dto.AdminReservationDto;
+import com.goldencinema.backend.dto.PagedResponse;
 import com.goldencinema.backend.dto.UpdateReservationStatusRequest;
 import com.goldencinema.backend.service.AdminReservationService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/reservations")
@@ -19,8 +18,10 @@ public class AdminReservationController {
     }
 
     @GetMapping
-    public List<AdminReservationDto> getAllReservations() {
-        return adminReservationService.getAllReservations();
+    public PagedResponse<AdminReservationDto> getAllReservations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return adminReservationService.getAllReservationsPaged(page, size);
     }
 
     @PutMapping("/{id}/status")

@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+/metadata_messages-defaults.properties
+/jasperreports_extension.properties

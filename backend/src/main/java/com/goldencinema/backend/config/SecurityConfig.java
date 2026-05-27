@@ -46,6 +46,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/auth/login", "/auth/register", "/auth/test",
                                 "/api/auth/login", "/api/auth/register", "/api/auth/test").permitAll()
                         .requestMatchers("/api/payments/stripe/webhook").permitAll()
@@ -68,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/users", "/api/admin/users/*").hasRole("ADMIN")
                         .requestMatchers("/api/admin/stats").hasRole("ADMIN")
                         .requestMatchers("/api/admin/reservations", "/api/admin/reservations/*").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/reports", "/api/admin/reports/**").hasRole("ADMIN")
                         .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/reservations").hasRole("USER")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/reservations/my").hasRole("USER")

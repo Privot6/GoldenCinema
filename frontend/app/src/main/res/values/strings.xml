@@ -37,4 +37,13 @@
     <string name="ticket_count">Bilety:</string>
     <string name="total_price">Razem:</string>
     <string name="reserve_button">Zarezerwuj</string>
+    <string name="reservation_confirmed">Rezerwacja potwierdzona!</string>
+    <string name="reservation_code_label">Kod rezerwacji:</string>
+    <string name="ok_button">OK</string>
+    <string name="retry_button">Spróbuj ponownie</string>
+    <string name="profile_title">Profil</string>
+    <string name="logout_button">WYLOGUJ</string>
+    <string name="nav_repertuar">Repertuar</string>
+    <string name="nav_reservations">Rezerwacje</string>
+    <string name="nav_profile">Profil</string>
 </resources>

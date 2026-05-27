@@ -2,6 +2,8 @@ package com.goldencinema.backend.repository;
 
 import com.goldencinema.backend.entity.Screening;
 import com.goldencinema.backend.entity.ScreeningStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +29,10 @@ public interface ScreeningRepository extends JpaRepository<Screening, Long> {
 
     @Query("SELECT s FROM Screening s JOIN FETCH s.movie JOIN FETCH s.hall ORDER BY s.startTime DESC")
     List<Screening> findAllWithMovieAndHall();
+
+    @Query(value = "SELECT s FROM Screening s JOIN FETCH s.movie JOIN FETCH s.hall",
+           countQuery = "SELECT COUNT(s) FROM Screening s")
+    Page<Screening> findAllWithMovieAndHall(Pageable pageable);
 
     @Query("""
         SELECT s

@@ -3,7 +3,6 @@ package com.goldencinema.backend.service;
 import com.goldencinema.backend.dto.LoginRequest;
 import com.goldencinema.backend.dto.LoginResponse;
 import com.goldencinema.backend.dto.RegisterRequest;
-import com.goldencinema.backend.dto.RegisterResponse;
 import com.goldencinema.backend.entity.Role;
 import com.goldencinema.backend.entity.User;
 import com.goldencinema.backend.exception.InvalidCredentialsException;
@@ -35,13 +34,13 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public RegisterResponse register(RegisterRequest request) {
+    public LoginResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new UserAlreadyExistsException("Użytkownik z takim emailem już istnieje");
+            throw new UserAlreadyExistsException("Ten adres email jest już zajęty");
         }
 
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Rola ROLE_USER nie istnieje"));
+        Role userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new RuntimeException("Rola USER nie istnieje"));
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -56,16 +55,10 @@ public class AuthService {
         user.setUpdatedAt(now);
         user.setRoles(Set.of(userRole));
 
-        User savedUser = userRepository.save(user);
+        userRepository.save(user);
 
-        return new RegisterResponse(
-                savedUser.getId(),
-                savedUser.getFirstName(),
-                savedUser.getLastName(),
-                savedUser.getEmail(),
-                savedUser.getPhone(),
-                savedUser.getIsActive()
-        );
+        String token = jwtService.generateToken(request.email(), userRole.getName());
+        return new LoginResponse(token, "Bearer");
     }
 
     public LoginResponse login(LoginRequest request) {

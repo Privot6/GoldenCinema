@@ -4,6 +4,7 @@ public record SeatAvailabilityDto(
         Long id,
         String rowLabel,
         Integer seatNumber,
-        boolean isAvailable
+        boolean isAvailable,
+        Integer gridCol
 ) {
 }

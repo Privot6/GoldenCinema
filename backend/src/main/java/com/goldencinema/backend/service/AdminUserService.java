@@ -1,12 +1,16 @@
 package com.goldencinema.backend.service;
 
 import com.goldencinema.backend.dto.CreateUserRequest;
+import com.goldencinema.backend.dto.PagedResponse;
 import com.goldencinema.backend.dto.UpdateUserRequest;
 import com.goldencinema.backend.dto.UserSummaryDto;
 import com.goldencinema.backend.entity.Role;
 import com.goldencinema.backend.entity.User;
 import com.goldencinema.backend.repository.RoleRepository;
 import com.goldencinema.backend.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,6 +38,19 @@ public class AdminUserService {
         return userRepository.findAll().stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    public PagedResponse<UserSummaryDto> getAllUsersPaged(int page, int size) {
+        Page<User> result = userRepository.findAll(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return new PagedResponse<>(
+                result.getContent().stream().map(this::toDto).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isLast()
+        );
     }
 
     public UserSummaryDto updateUser(Long id, UpdateUserRequest request) {

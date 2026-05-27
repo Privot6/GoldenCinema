@@ -1,6 +1,7 @@
 package com.goldencinema.backend.controller;
 
 import com.goldencinema.backend.dto.CreateUserRequest;
+import com.goldencinema.backend.dto.PagedResponse;
 import com.goldencinema.backend.dto.UpdateUserRequest;
 import com.goldencinema.backend.dto.UserSummaryDto;
 import com.goldencinema.backend.service.AdminUserService;
@@ -8,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -22,8 +21,10 @@ public class AdminUserController {
     }
 
     @GetMapping
-    public List<UserSummaryDto> getAllUsers() {
-        return adminUserService.getAllUsers();
+    public PagedResponse<UserSummaryDto> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return adminUserService.getAllUsersPaged(page, size);
     }
 
     @PostMapping

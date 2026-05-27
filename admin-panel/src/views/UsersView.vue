@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +28,11 @@ const users = ref<UserSummary[]>([])
 const loading = ref(false)
 const error = ref('')
 const showForm = ref(false)
+const currentPage = ref(0)
+const totalPages = ref(0)
+const totalElements = ref(0)
+
+interface PagedResponse<T> { content: T[]; page: number; totalPages: number; totalElements: number }
 
 const form = reactive({
   firstName: '',
@@ -46,25 +51,25 @@ function resetForm() {
 function openCreate() { resetForm(); showForm.value = true }
 function closeForm() { showForm.value = false; resetForm() }
 
-const PAGE_SIZE = 25
-const page = ref(1)
-const paged = computed(() => users.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
-const totalPages = computed(() => Math.max(1, Math.ceil(users.value.length / PAGE_SIZE)))
-
-async function fetchUsers() {
+async function fetchUsers(p = currentPage.value) {
   loading.value = true; error.value = ''
   try {
-    const { data } = await api.get<UserSummary[]>('/admin/users')
-    users.value = data
-    page.value = 1
+    const { data } = await api.get<PagedResponse<UserSummary>>('/admin/users', { params: { page: p, size: 20 } })
+    users.value = data.content
+    currentPage.value = data.page
+    totalPages.value = data.totalPages
+    totalElements.value = data.totalElements
   } catch { error.value = 'Nie udało się pobrać listy użytkowników.' }
   finally { loading.value = false }
 }
 
+function prevPage() { if (currentPage.value > 0) fetchUsers(currentPage.value - 1) }
+function nextPage() { if (currentPage.value < totalPages.value - 1) fetchUsers(currentPage.value + 1) }
+
 async function saveUser() {
   error.value = ''
   try {
-    const { data } = await api.post<UserSummary>('/admin/users', {
+    await api.post<UserSummary>('/admin/users', {
       firstName: form.firstName,
       lastName: form.lastName,
       email: form.email,
@@ -72,7 +77,7 @@ async function saveUser() {
       password: form.password,
       role: form.role
     })
-    users.value.unshift(data)
+    await fetchUsers(0)
     closeForm()
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? 'Błąd podczas tworzenia użytkownika.'
@@ -99,13 +104,13 @@ async function deleteUser(user: UserSummary) {
   if (!window.confirm(`Usunąć użytkownika ${user.firstName} ${user.lastName}?`)) return
   try {
     await api.delete(`/admin/users/${user.id}`)
-    users.value = users.value.filter(u => u.id !== user.id)
+    await fetchUsers(currentPage.value)
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? 'Nie udało się usunąć użytkownika.'
   }
 }
 
-onMounted(fetchUsers)
+onMounted(() => fetchUsers(0))
 </script>
 
 <template>
@@ -185,7 +190,7 @@ onMounted(fetchUsers)
           </TableHeader>
           <TableBody>
             <TableEmpty v-if="users.length === 0">Brak użytkowników</TableEmpty>
-            <TableRow v-for="u in paged" :key="u.id">
+            <TableRow v-for="u in users" :key="u.id">
               <TableCell class="font-medium">{{ u.firstName }} {{ u.lastName }}</TableCell>
               <TableCell class="text-muted-foreground">{{ u.email }}</TableCell>
               <TableCell class="text-muted-foreground">{{ u.phone ?? '—' }}</TableCell>
@@ -224,10 +229,10 @@ onMounted(fetchUsers)
           </TableBody>
         </Table>
         <div v-if="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
-          <span class="text-sm text-muted-foreground">Strona {{ page }} z {{ totalPages }} ({{ users.length }} użytkowników)</span>
+          <span class="text-sm text-muted-foreground">Strona {{ currentPage + 1 }} z {{ totalPages }} ({{ totalElements }} użytkowników)</span>
           <div class="flex gap-2">
-            <Button variant="outline" size="sm" :disabled="page === 1" @click="page--">Poprzednia</Button>
-            <Button variant="outline" size="sm" :disabled="page === totalPages" @click="page++">Następna</Button>
+            <Button variant="outline" size="sm" :disabled="currentPage === 0" @click="prevPage">Poprzednia</Button>
+            <Button variant="outline" size="sm" :disabled="currentPage >= totalPages - 1" @click="nextPage">Następna</Button>
           </div>
         </div>
       </CardContent>

@@ -9,7 +9,8 @@ import {
   Table, TableBody, TableCell, TableEmpty,
   TableHead, TableHeader, TableRow
 } from '@/components/ui/table'
-import { AlertCircle, Building2, CalendarClock, RefreshCw, Ticket, TrendingUp, Users } from 'lucide-vue-next'
+import { AlertCircle, Building2, CalendarClock, FileBarChart, RefreshCw, Ticket, TrendingUp, Users } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 
 interface Movie { id: number; title: string }
 interface Hall  { id: number; name: string }
@@ -172,6 +173,26 @@ onMounted(fetchAll)
       </template>
     </div>
 
+    <Card>
+      <CardHeader class="pb-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <CardTitle class="text-base">Raporty finansowe</CardTitle>
+            <CardDescription>Generuj raporty PDF z podziałem na filmy i seanse</CardDescription>
+          </div>
+          <FileBarChart class="w-5 h-5 text-muted-foreground" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <RouterLink to="/reports">
+          <Button variant="outline" class="gap-2">
+            <FileBarChart class="w-4 h-4" />
+            Otwórz raporty
+          </Button>
+        </RouterLink>
+      </CardContent>
+    </Card>
+
     <!-- Error -->
     <Alert v-if="error" variant="destructive">
       <AlertCircle class="w-4 h-4 shrink-0 mt-0.5" />
@@ -219,5 +240,6 @@ onMounted(fetchAll)
         </div>
       </CardContent>
     </Card>
+
   </div>
 </template>
