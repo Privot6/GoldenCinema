@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object NetworkModule {
-    const val BASE_URL = "http://192.168.0.162:8080/api/"
+    val BASE_URL = BuildConfig.BASE_URL
 
     private val okHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
