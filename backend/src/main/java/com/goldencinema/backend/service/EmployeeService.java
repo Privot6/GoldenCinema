@@ -1,6 +1,7 @@
 package com.goldencinema.backend.service;
 
 import com.goldencinema.backend.dto.EmployeeReservationDto;
+import com.goldencinema.backend.dto.ReservationVerificationDto;
 import com.goldencinema.backend.dto.UpdateReservationStatusRequest;
 import com.goldencinema.backend.entity.*;
 import com.goldencinema.backend.repository.ReservationRepository;
@@ -90,6 +91,35 @@ public class EmployeeService {
         reservationStatusHistoryRepository.save(history);
 
         return toEmployeeReservationDto(reservation);
+    }
+
+    @Transactional(readOnly = true)
+    public ReservationVerificationDto verifyByCode(String code) {
+        Reservation r = reservationRepository.findByReservationCode(code)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rezerwacja nie znaleziona"));
+
+        boolean valid = r.getStatus() == ReservationStatus.OCZEKUJACA
+                     || r.getStatus() == ReservationStatus.POTWIERDZONA;
+        String reason = switch (r.getStatus()) {
+            case ANULOWANA -> "Rezerwacja jest anulowana";
+            case WYGASLA   -> "Rezerwacja wygasła";
+            default        -> null;
+        };
+
+        return new ReservationVerificationDto(
+                r.getId(),
+                r.getReservationCode(),
+                r.getStatus(),
+                valid,
+                reason,
+                r.getUser().getFirstName(),
+                r.getUser().getLastName(),
+                r.getScreening().getMovie().getTitle(),
+                r.getScreening().getHall().getName(),
+                r.getScreening().getStartTime(),
+                r.getTotalPrice(),
+                r.getReservationSeats().size()
+        );
     }
 
     private EmployeeReservationDto toEmployeeReservationDto(Reservation r) {

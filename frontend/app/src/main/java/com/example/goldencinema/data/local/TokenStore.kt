@@ -40,6 +40,18 @@ object TokenStore {
         prefs?.edit()?.remove(KEY_TOKEN)?.apply()
     }
 
+    fun getUserRole(): String? {
+        val token = get() ?: return null
+        return try {
+            val parts = token.split(".")
+            if (parts.size != 3) return null
+            val bytes = Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING)
+            JSONObject(String(bytes, Charsets.UTF_8)).optString("role").takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun isTokenValid(): Boolean {
         val token = get() ?: return false
         return try {

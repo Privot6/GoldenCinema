@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
                     composable("profile") {
                         ProfileScreen(navController)
                     }
+                    composable("scanner") {
+                        QrScannerScreen(navController)
+                    }
                 }
             }
         }

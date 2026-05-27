@@ -50,4 +50,16 @@
     <string name="nav_repertuar">Repertuar</string>
     <string name="nav_reservations">Rezerwacje</string>
     <string name="nav_profile">Profil</string>
+    <string name="nav_scanner">Skaner</string>
+    <string name="scanner_title">Skaner QR</string>
+    <string name="scanner_permission_rationale">Aplikacja potrzebuje dostępu do kamery, aby skanować kody QR biletów.</string>
+    <string name="scanner_grant_permission">Przyznaj uprawnienie</string>
+    <string name="scanner_code_label">Kod:</string>
+    <string name="scanner_hall_label">Sala:</string>
+    <string name="scanner_seats_label">Bilety:</string>
+    <string name="scanner_price_label">Kwota:</string>
+    <string name="scanner_confirm_entry">Potwierdź wejście</string>
+    <string name="scanner_scan_again">Skanuj ponownie</string>
+    <string name="scanner_error_title">Nie znaleziono</string>
+    <string name="scanner_invalid_title">Bilet nieważny</string>
 </resources>
