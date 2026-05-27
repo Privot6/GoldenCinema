@@ -87,3 +87,21 @@ data class ReservedSeatDto(
     val ticketType: String,
     val price: Double
 )
+
+// ── Employee / Scanner ────────────────────────────────────────────────────────
+data class ReservationVerificationDto(
+    val id: Long,
+    val reservationCode: String,
+    val status: String,
+    val isValid: Boolean,
+    val invalidReason: String?,
+    val userFirstName: String,
+    val userLastName: String,
+    val movieTitle: String,
+    val hallName: String,
+    val screeningStartTime: String,
+    val totalPrice: Double,
+    val seatCount: Int
+)
+
+data class UpdateStatusRequest(val status: String)

@@ -1,6 +1,7 @@
 package com.goldencinema.backend.controller;
 
 import com.goldencinema.backend.dto.EmployeeReservationDto;
+import com.goldencinema.backend.dto.ReservationVerificationDto;
 import com.goldencinema.backend.dto.UpdateReservationStatusRequest;
 import com.goldencinema.backend.service.EmployeeService;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,11 @@ public class EmployeeController {
     public List<EmployeeReservationDto> getReservations(
             @RequestParam(required = false) Long screeningId) {
         return employeeService.getReservations(screeningId);
+    }
+
+    @GetMapping("/reservations/verify/{code}")
+    public ReservationVerificationDto verifyReservation(@PathVariable String code) {
+        return employeeService.verifyByCode(code);
     }
 
     @PatchMapping("/reservations/{id}/status")

@@ -40,4 +40,5 @@ object NetworkModule {
     val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
     val screeningApi: ScreeningApi by lazy { retrofit.create(ScreeningApi::class.java) }
     val reservationApi: ReservationApi by lazy { retrofit.create(ReservationApi::class.java) }
+    val employeeApi: EmployeeApi by lazy { retrofit.create(EmployeeApi::class.java) }
 }
