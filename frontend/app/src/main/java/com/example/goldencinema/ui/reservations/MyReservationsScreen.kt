@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,6 +53,29 @@ private fun statusColor(status: String): Color = when (status) {
 private fun statusTextColor(status: String): Color = when (status) {
     "OCZEKUJACA" -> Color.Black
     else         -> Color.White
+}
+
+private fun buildQrContent(reservation: ReservationResponseDto): String {
+    val seats = reservation.reservedSeatsDto.joinToString(", ") { "${it.rowLabel}${it.seatNumber}" }
+    val ticketCount = reservation.reservedSeatsDto.size
+    val statusLabel = when (reservation.status) {
+        "POTWIERDZONA" -> "OPLACONA"
+        "OCZEKUJACA"   -> "OCZEKUJE NA PLATNOSC"
+        "ANULOWANA"    -> "ANULOWANA"
+        "WYGASLA"      -> "WYGASLA"
+        else           -> reservation.status
+    }
+    return buildString {
+        appendLine("GOLDEN CINEMA")
+        appendLine("Kod: ${reservation.reservationCode}")
+        appendLine("Film: ${reservation.screeningDto.movie.title}")
+        appendLine("Data: ${formatDateTime(reservation.screeningDto.startTime)}")
+        appendLine("Sala: ${reservation.screeningDto.hall.name}")
+        appendLine("Miejsca: $seats")
+        appendLine("Bilety: $ticketCount")
+        appendLine("Status: $statusLabel")
+        append("Kwota: ${"%.2f".format(reservation.totalPrice)} PLN")
+    }
 }
 
 private fun generateQrBitmap(code: String): androidx.compose.ui.graphics.ImageBitmap {
@@ -187,28 +211,80 @@ fun ReservationTicket(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val qrBitmap = remember(reservation.reservationCode) {
-                        generateQrBitmap(reservation.reservationCode)
+                    val qrContent = buildQrContent(reservation)
+                    val qrBitmap = remember(reservation.id, reservation.status) {
+                        generateQrBitmap(qrContent)
                     }
                     Image(
                         bitmap = qrBitmap,
                         contentDescription = "Kod QR rezerwacji",
                         modifier = Modifier
-                            .size(240.dp)
+                            .size(220.dp)
                             .clip(RoundedCornerShape(8.dp))
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         text = reservation.reservationCode,
                         color = CinemaGold,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = Color(0xFF333333))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = reservation.screeningDto.movie.title,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = formatDateTime(reservation.screeningDto.startTime),
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Sala", color = Color.Gray, fontSize = 11.sp)
+                            Text(reservation.screeningDto.hall.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Bilety", color = Color.Gray, fontSize = 11.sp)
+                            Text("${reservation.reservedSeatsDto.size}", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Kwota", color = Color.Gray, fontSize = 11.sp)
+                            Text("${"%.2f".format(reservation.totalPrice)} PLN", color = CinemaGold, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Miejsca: ${reservation.reservedSeatsDto.joinToString(", ") { "${it.rowLabel}${it.seatNumber}" }}",
+                        color = Color.LightGray,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        color = statusColor(reservation.status),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = reservation.status,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            color = statusTextColor(reservation.status),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.ticket_qr_help),
                         color = Color.Gray,
-                        fontSize = 12.sp
+                        fontSize = 11.sp
                     )
                 }
             },
