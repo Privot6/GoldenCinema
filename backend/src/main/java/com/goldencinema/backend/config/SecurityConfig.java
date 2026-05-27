@@ -48,6 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/register", "/auth/test",
                                 "/api/auth/login", "/api/auth/register", "/api/auth/test").permitAll()
+                        .requestMatchers("/api/payments/stripe/webhook").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/screenings").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/screenings").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/movies/*/screenings").permitAll()
@@ -67,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/users", "/api/admin/users/*").hasRole("ADMIN")
                         .requestMatchers("/api/admin/stats").hasRole("ADMIN")
                         .requestMatchers("/api/admin/reservations", "/api/admin/reservations/*").hasRole("ADMIN")
+                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/reservations").hasRole("USER")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/reservations/my").hasRole("USER")
                         .anyRequest().authenticated()

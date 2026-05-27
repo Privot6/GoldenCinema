@@ -20,7 +20,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findAllByScreening(Screening screening);
 
     Optional<Reservation> findByReservationCode(String reservationCode);
-
+    @Query("""
+    SELECT DISTINCT r
+    FROM Reservation r
+    JOIN FETCH r.user
+    JOIN FETCH r.screening s
+    JOIN FETCH s.movie
+    JOIN FETCH s.hall
+    WHERE s.id = :screeningId
+    ORDER BY r.createdAt DESC
+""")
+    List<Reservation> findAllByScreeningId(@Param("screeningId") Long screeningId);
     @Query("""
         SELECT DISTINCT r
         FROM Reservation r
