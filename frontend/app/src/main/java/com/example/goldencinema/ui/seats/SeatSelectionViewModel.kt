@@ -17,7 +17,11 @@ sealed class SeatsUiState {
 sealed class ReservationUiState {
     object Idle : ReservationUiState()
     object Loading : ReservationUiState()
-    data class Success(val code: String) : ReservationUiState()
+    data class ReadyForPayment(
+        val reservationCode: String,
+        val totalPrice: Double,
+        val paymentUrl: String
+    ) : ReservationUiState()
     data class Conflict(val message: String) : ReservationUiState()
     data class Error(val message: String) : ReservationUiState()
 }
@@ -76,8 +80,12 @@ class SeatSelectionViewModel(
                 val response = NetworkModule.reservationApi.createReservation(request)
                 when {
                     response.isSuccessful -> {
-                        val code = response.body()?.reservationCode ?: "N/A"
-                        _reservationState.value = ReservationUiState.Success(code)
+                        val body = response.body()!!
+                        _reservationState.value = ReservationUiState.ReadyForPayment(
+                            reservationCode = body.reservationCode,
+                            totalPrice = body.totalPrice,
+                            paymentUrl = body.paymentUrl
+                        )
                     }
                     response.code() == 409 -> {
                         _reservationState.value = ReservationUiState.Conflict(

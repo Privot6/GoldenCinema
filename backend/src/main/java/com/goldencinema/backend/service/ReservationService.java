@@ -113,17 +113,47 @@ public class ReservationService {
 
         Reservation savedReservation = reservationRepository.save(reservation);
 
-        // Tworzenie sesji Stripe
+        Session session = createStripeSession(savedReservation);
+
+        return new ReservationPaymentResponse(
+                savedReservation.getId(),
+                savedReservation.getReservationCode(),
+                savedReservation.getStatus(),
+                savedReservation.getTotalPrice(),
+                session.getUrl(),
+                session.getId()
+        );
+    }
+
+    public CheckoutUrlResponse createCheckoutUrlForExistingReservation(Long reservationId) throws StripeException {
+        User user = getCurrentUser();
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found"));
+
+        if (!reservation.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your reservation");
+        }
+
+        if (reservation.getStatus() != ReservationStatus.OCZEKUJACA) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reservation is not pending payment");
+        }
+
+        Session session = createStripeSession(reservation);
+        return new CheckoutUrlResponse(session.getUrl());
+    }
+
+    private Session createStripeSession(Reservation reservation) throws StripeException {
         Stripe.apiKey = stripeApiKey;
 
-        long amountInCents = savedReservation.getTotalPrice()
+        long amountInCents = reservation.getTotalPrice()
                 .multiply(new BigDecimal(100))
                 .longValue();
 
         SessionCreateParams.LineItem.PriceData.ProductData product =
                 SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                        .setName("Rezerwacja " + savedReservation.getReservationCode() + " - " +
-                                screening.getMovie().getTitle())
+                        .setName("Rezerwacja " + reservation.getReservationCode() + " - " +
+                                reservation.getScreening().getMovie().getTitle())
                         .build();
 
         SessionCreateParams params = SessionCreateParams.builder()
@@ -140,20 +170,11 @@ public class ReservationService {
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(stripeSuccessUrl + "?session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(stripeCancelUrl)
-                .putMetadata("reservationId", savedReservation.getId().toString())
-                .putMetadata("reservationCode", savedReservation.getReservationCode())
+                .putMetadata("reservationId", reservation.getId().toString())
+                .putMetadata("reservationCode", reservation.getReservationCode())
                 .build();
 
-        Session session = Session.create(params);
-
-        return new ReservationPaymentResponse(
-                savedReservation.getId(),
-                savedReservation.getReservationCode(),
-                savedReservation.getStatus(),
-                savedReservation.getTotalPrice(),
-                session.getUrl(),
-                session.getId()
-        );
+        return Session.create(params);
     }
 
     public List<ReservationResponse> getMyReservations() {

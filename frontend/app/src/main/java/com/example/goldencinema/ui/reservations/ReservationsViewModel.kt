@@ -13,12 +13,22 @@ sealed class ReservationsUiState {
     data class Error(val message: String) : ReservationsUiState()
 }
 
+sealed class CheckoutEvent {
+    object Idle : CheckoutEvent()
+    object Loading : CheckoutEvent()
+    data class OpenUrl(val url: String) : CheckoutEvent()
+    data class Error(val message: String) : CheckoutEvent()
+}
+
 class ReservationsViewModel : ViewModel() {
     private val _state = MutableStateFlow<ReservationsUiState>(ReservationsUiState.Loading)
     val state: StateFlow<ReservationsUiState> = _state.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val _checkoutEvent = MutableStateFlow<CheckoutEvent>(CheckoutEvent.Idle)
+    val checkoutEvent: StateFlow<CheckoutEvent> = _checkoutEvent.asStateFlow()
 
     init {
         loadMyReservations()
@@ -48,5 +58,31 @@ class ReservationsViewModel : ViewModel() {
                 _isRefreshing.value = false
             }
         }
+    }
+
+    fun startPayment(reservationId: Long) {
+        viewModelScope.launch {
+            _checkoutEvent.value = CheckoutEvent.Loading
+            try {
+                val response = NetworkModule.reservationApi.getCheckoutUrl(reservationId)
+                when {
+                    response.isSuccessful -> {
+                        val url = response.body()?.paymentUrl
+                        if (url != null) {
+                            _checkoutEvent.value = CheckoutEvent.OpenUrl(url)
+                        } else {
+                            _checkoutEvent.value = CheckoutEvent.Error("Brak URL płatności")
+                        }
+                    }
+                    else -> _checkoutEvent.value = CheckoutEvent.Error("Błąd serwera: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _checkoutEvent.value = CheckoutEvent.Error(e.message ?: "Błąd połączenia")
+            }
+        }
+    }
+
+    fun resetCheckoutEvent() {
+        _checkoutEvent.value = CheckoutEvent.Idle
     }
 }

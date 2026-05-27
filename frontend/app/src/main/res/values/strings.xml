@@ -41,6 +41,10 @@
     <string name="reservation_code_label">Kod rezerwacji:</string>
     <string name="ok_button">OK</string>
     <string name="retry_button">Spróbuj ponownie</string>
+    <string name="payment_required_title">Opłać rezerwację</string>
+    <string name="payment_instructions">Kliknij „Zapłać teraz", aby opłacić bilety przez Stripe i potwierdzić rezerwację.</string>
+    <string name="pay_now_button">Zapłać teraz</string>
+    <string name="pay_later_button">Zapłać później</string>
     <string name="profile_title">Profil</string>
     <string name="logout_button">WYLOGUJ</string>
     <string name="nav_repertuar">Repertuar</string>

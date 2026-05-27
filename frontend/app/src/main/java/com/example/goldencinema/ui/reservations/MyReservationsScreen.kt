@@ -1,5 +1,7 @@
 package com.example.goldencinema
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -19,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,9 +74,27 @@ fun MyReservationsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val checkoutEvent by viewModel.checkoutEvent.collectAsState()
     val pullState = rememberPullToRefreshState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    LaunchedEffect(checkoutEvent) {
+        when (val event = checkoutEvent) {
+            is CheckoutEvent.OpenUrl -> {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(event.url)))
+                viewModel.resetCheckoutEvent()
+            }
+            is CheckoutEvent.Error -> {
+                snackbarHostState.showSnackbar(event.message)
+                viewModel.resetCheckoutEvent()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -106,6 +127,7 @@ fun MyReservationsScreen(
                 }
             }
             is ReservationsUiState.Success -> {
+                val isCheckoutLoading = checkoutEvent is CheckoutEvent.Loading
                 PullToRefreshBox(
                     state = pullState,
                     isRefreshing = isRefreshing,
@@ -123,7 +145,13 @@ fun MyReservationsScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             items(s.reservations) { reservation ->
-                                ReservationTicket(reservation)
+                                ReservationTicket(
+                                    reservation = reservation,
+                                    isPaymentLoading = isCheckoutLoading,
+                                    onPayClick = if (reservation.status == "OCZEKUJACA") {
+                                        { viewModel.startPayment(reservation.id) }
+                                    } else null
+                                )
                             }
                         }
                     }
@@ -134,7 +162,11 @@ fun MyReservationsScreen(
 }
 
 @Composable
-fun ReservationTicket(reservation: ReservationResponseDto) {
+fun ReservationTicket(
+    reservation: ReservationResponseDto,
+    isPaymentLoading: Boolean = false,
+    onPayClick: (() -> Unit)? = null
+) {
     var isExpanded by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
 
@@ -292,8 +324,25 @@ fun ReservationTicket(reservation: ReservationResponseDto) {
                         }
                     }
 
+                    if (onPayClick != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onPayClick,
+                            enabled = !isPaymentLoading,
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            if (isPaymentLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
+                            } else {
+                                Text(stringResource(R.string.pay_now_button), color = Color.Black, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
                     if (canShowQr) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { showQrDialog = true },
                             modifier = Modifier

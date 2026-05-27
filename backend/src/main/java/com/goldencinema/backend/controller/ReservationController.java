@@ -1,5 +1,6 @@
 package com.goldencinema.backend.controller;
 
+import com.goldencinema.backend.dto.CheckoutUrlResponse;
 import com.goldencinema.backend.dto.CreateReservationRequest;
 import com.goldencinema.backend.dto.ReservationPaymentResponse;
 import com.goldencinema.backend.dto.ReservationResponse;
@@ -30,5 +31,10 @@ public class ReservationController {
     @GetMapping("/my")
     public List<ReservationResponse> getMyReservations() {
         return reservationService.getMyReservations();
+    }
+
+    @GetMapping("/{id}/checkout")
+    public CheckoutUrlResponse getCheckoutUrl(@PathVariable Long id) throws StripeException {
+        return reservationService.createCheckoutUrlForExistingReservation(id);
     }
 }
