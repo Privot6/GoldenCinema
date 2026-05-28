@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public class ReservationService {
     private final SeatRepository seatRepository;
     private final PriceListRepository priceListRepository;
     private final UserRepository userRepository;
+    private final ReservationStatusHistoryRepository reservationStatusHistoryRepository;
 
     @Value("${stripe.apiKey}")
     private String stripeApiKey;
@@ -44,13 +46,15 @@ public class ReservationService {
                               ScreeningRepository screeningRepository,
                               SeatRepository seatRepository,
                               PriceListRepository priceListRepository,
-                              UserRepository userRepository) {
+                              UserRepository userRepository,
+                              ReservationStatusHistoryRepository reservationStatusHistoryRepository) {
         this.reservationRepository = reservationRepository;
         this.reservationSeatRepository = reservationSeatRepository;
         this.screeningRepository = screeningRepository;
         this.seatRepository = seatRepository;
         this.priceListRepository = priceListRepository;
         this.userRepository = userRepository;
+        this.reservationStatusHistoryRepository = reservationStatusHistoryRepository;
     }
 
     public ReservationPaymentResponse createReservationPayment(CreateReservationRequest request,
@@ -185,6 +189,42 @@ public class ReservationService {
                 .map(this::mapToReservationResponse)
                 .toList();
     }
+    @Transactional
+    public ReservationResponse cancelByClient(Long reservationId, String clientEmail) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found"));
+
+        // Ensure reservation belongs to the client
+        if (!reservation.getUser().getEmail().equals(clientEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Forbidden");
+        }
+
+        ReservationStatus current = reservation.getStatus();
+        if (current == ReservationStatus.ANULOWANA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Reservation already cancelled");
+        }
+
+        if (current != ReservationStatus.OCZEKUJACA && current != ReservationStatus.POTWIERDZONA) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot cancel reservation in current status");
+        }
+
+        ReservationStatus oldStatus = reservation.getStatus();
+        reservation.setStatus(ReservationStatus.ANULOWANA);
+        reservation.setUpdatedAt(LocalDateTime.now());
+        reservationRepository.save(reservation);
+
+        ReservationStatusHistory history = new ReservationStatusHistory();
+        history.setReservation(reservation);
+        history.setOldStatus(oldStatus);
+        history.setNewStatus(ReservationStatus.ANULOWANA);
+        history.setChangedBy(reservation.getUser());
+        history.setChangedAt(LocalDateTime.now());
+        history.setNote("CLIENT_CANCELLED");
+        reservationStatusHistoryRepository.save(history);
+
+        return mapToReservationResponse(reservation);
+    }
+
 
     private void validateRequest(CreateReservationRequest request) {
         if (request.screeningId() == null) {

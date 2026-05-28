@@ -71,6 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/reservations", "/api/admin/reservations/*").hasRole("ADMIN")
                         .requestMatchers("/api/admin/reports", "/api/admin/reports/**").hasRole("ADMIN")
                         .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/reservations/*/cancel").hasRole("USER")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/reservations").hasRole("USER")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/reservations/my").hasRole("USER")
                         .anyRequest().authenticated()
