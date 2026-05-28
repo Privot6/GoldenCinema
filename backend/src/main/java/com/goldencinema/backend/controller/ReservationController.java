@@ -37,4 +37,10 @@ public class ReservationController {
     public CheckoutUrlResponse getCheckoutUrl(@PathVariable Long id) throws StripeException {
         return reservationService.createCheckoutUrlForExistingReservation(id);
     }
+
+    @PatchMapping("/{id}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    public ReservationResponse cancel(@PathVariable Long id, Authentication authentication) {
+        return reservationService.cancelByClient(id, authentication.getName());
+    }
 }
