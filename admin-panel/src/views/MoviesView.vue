@@ -2,7 +2,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import AppModal from '@/components/AppModal.vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableEmpty,
   TableHead, TableHeader, TableRow
 } from '@/components/ui/table'
-import { AlertCircle, Plus, Pencil, Trash2, X } from 'lucide-vue-next'
+import { AlertCircle, Plus, Pencil, Trash2 } from 'lucide-vue-next'
 
 interface Movie {
   id: number
@@ -114,55 +115,51 @@ onMounted(fetchMovies)
       <AlertDescription>{{ error }}</AlertDescription>
     </Alert>
 
-    <!-- Form -->
-    <Card v-if="showForm">
-      <CardHeader class="pb-3">
-        <div class="flex items-center justify-between">
-          <CardTitle class="text-base">{{ editingId ? 'Edytuj film' : 'Nowy film' }}</CardTitle>
-          <Button variant="ghost" size="sm" @click="closeForm"><X class="w-4 h-4" /></Button>
+    <!-- Form modal -->
+    <AppModal
+      :open="showForm"
+      :title="editingId ? 'Edytuj film' : 'Nowy film'"
+      @close="closeForm"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1 md:col-span-2">
+          <Label>Tytuł *</Label>
+          <Input v-model="form.title" placeholder="Tytuł filmu" />
         </div>
-      </CardHeader>
-      <CardContent>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-1 md:col-span-2">
-            <Label>Tytuł *</Label>
-            <Input v-model="form.title" placeholder="Tytuł filmu" />
-          </div>
-          <div class="space-y-1 md:col-span-2">
-            <Label>Opis</Label>
-            <Input v-model="form.description" placeholder="Krótki opis" />
-          </div>
-          <div class="space-y-1">
-            <Label>Czas trwania (min) *</Label>
-            <Input v-model="form.durationMinutes" type="number" min="1" placeholder="120" />
-          </div>
-          <div class="space-y-1">
-            <Label>Kategoria wiekowa *</Label>
-            <Input v-model="form.ageRating" placeholder="PG-13" />
-          </div>
-          <div class="space-y-1">
-            <Label>Język *</Label>
-            <Input v-model="form.language" placeholder="Angielski" />
-          </div>
-          <div class="space-y-1">
-            <Label>Napisy</Label>
-            <Input v-model="form.subtitles" placeholder="Polski" />
-          </div>
-          <div class="space-y-1">
-            <Label>Gatunek *</Label>
-            <Input v-model="form.genre" placeholder="Akcja" />
-          </div>
-          <div class="space-y-1">
-            <Label>URL plakatu</Label>
-            <Input v-model="form.posterUrl" placeholder="https://..." />
-          </div>
+        <div class="space-y-1 md:col-span-2">
+          <Label>Opis</Label>
+          <Input v-model="form.description" placeholder="Krótki opis" />
         </div>
-        <div class="flex gap-2 mt-4">
-          <Button @click="saveMovie">{{ editingId ? 'Zapisz zmiany' : 'Dodaj' }}</Button>
-          <Button variant="outline" @click="closeForm">Anuluj</Button>
+        <div class="space-y-1">
+          <Label>Czas trwania (min) *</Label>
+          <Input v-model="form.durationMinutes" type="number" min="1" placeholder="120" />
         </div>
-      </CardContent>
-    </Card>
+        <div class="space-y-1">
+          <Label>Kategoria wiekowa *</Label>
+          <Input v-model="form.ageRating" placeholder="PG-13" />
+        </div>
+        <div class="space-y-1">
+          <Label>Język *</Label>
+          <Input v-model="form.language" placeholder="Angielski" />
+        </div>
+        <div class="space-y-1">
+          <Label>Napisy</Label>
+          <Input v-model="form.subtitles" placeholder="Polski" />
+        </div>
+        <div class="space-y-1">
+          <Label>Gatunek *</Label>
+          <Input v-model="form.genre" placeholder="Akcja" />
+        </div>
+        <div class="space-y-1">
+          <Label>URL plakatu</Label>
+          <Input v-model="form.posterUrl" placeholder="https://..." />
+        </div>
+      </div>
+      <div class="flex gap-2 mt-6">
+        <Button @click="saveMovie">{{ editingId ? 'Zapisz zmiany' : 'Dodaj' }}</Button>
+        <Button variant="outline" @click="closeForm">Anuluj</Button>
+      </div>
+    </AppModal>
 
     <!-- Table -->
     <Card>

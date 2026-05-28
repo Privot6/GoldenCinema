@@ -2,7 +2,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import AppModal from '@/components/AppModal.vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +11,7 @@ import {
   Table, TableBody, TableCell, TableEmpty,
   TableHead, TableHeader, TableRow
 } from '@/components/ui/table'
-import { AlertCircle, Plus, Trash2, X } from 'lucide-vue-next'
+import { AlertCircle, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 
 interface UserSummary {
   id: number
@@ -28,6 +29,7 @@ const users = ref<UserSummary[]>([])
 const loading = ref(false)
 const error = ref('')
 const showForm = ref(false)
+const editingId = ref<number | null>(null)
 const currentPage = ref(0)
 const totalPages = ref(0)
 const totalElements = ref(0)
@@ -46,9 +48,22 @@ const form = reactive({
 function resetForm() {
   form.firstName = ''; form.lastName = ''; form.email = ''
   form.phone = ''; form.password = ''; form.role = 'USER'
+  editingId.value = null
 }
 
 function openCreate() { resetForm(); showForm.value = true }
+
+function openEdit(u: UserSummary) {
+  resetForm()
+  form.firstName = u.firstName
+  form.lastName = u.lastName
+  form.email = u.email
+  form.phone = u.phone ?? ''
+  form.role = u.role
+  editingId.value = u.id
+  showForm.value = true
+}
+
 function closeForm() { showForm.value = false; resetForm() }
 
 async function fetchUsers(p = currentPage.value) {
@@ -69,18 +84,30 @@ function nextPage() { if (currentPage.value < totalPages.value - 1) fetchUsers(c
 async function saveUser() {
   error.value = ''
   try {
-    await api.post<UserSummary>('/admin/users', {
-      firstName: form.firstName,
-      lastName: form.lastName,
-      email: form.email,
-      phone: form.phone || null,
-      password: form.password,
-      role: form.role
-    })
-    await fetchUsers(0)
+    if (editingId.value !== null) {
+      const { data } = await api.put<UserSummary>(`/admin/users/${editingId.value}`, {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone || null,
+        role: form.role
+      })
+      const idx = users.value.findIndex(u => u.id === editingId.value)
+      if (idx !== -1) users.value[idx] = data
+    } else {
+      await api.post<UserSummary>('/admin/users', {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone || null,
+        password: form.password,
+        role: form.role
+      })
+      await fetchUsers(0)
+    }
     closeForm()
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? 'Błąd podczas tworzenia użytkownika.'
+    error.value = e?.response?.data?.message ?? 'Błąd podczas zapisywania użytkownika.'
   }
 }
 
@@ -127,50 +154,46 @@ onMounted(() => fetchUsers(0))
       <AlertDescription>{{ error }}</AlertDescription>
     </Alert>
 
-    <!-- Create form -->
-    <Card v-if="showForm">
-      <CardHeader class="pb-3">
-        <div class="flex items-center justify-between">
-          <CardTitle class="text-base">Nowy użytkownik</CardTitle>
-          <Button variant="ghost" size="sm" @click="closeForm"><X class="w-4 h-4" /></Button>
+    <!-- Create / Edit form modal -->
+    <AppModal
+      :open="showForm"
+      :title="editingId ? 'Edytuj użytkownika' : 'Nowy użytkownik'"
+      @close="closeForm"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1">
+          <Label>Imię *</Label>
+          <Input v-model="form.firstName" placeholder="Jan" />
         </div>
-      </CardHeader>
-      <CardContent>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-1">
-            <Label>Imię *</Label>
-            <Input v-model="form.firstName" placeholder="Jan" />
-          </div>
-          <div class="space-y-1">
-            <Label>Nazwisko *</Label>
-            <Input v-model="form.lastName" placeholder="Kowalski" />
-          </div>
-          <div class="space-y-1">
-            <Label>Email *</Label>
-            <Input v-model="form.email" type="email" placeholder="jan@example.com" />
-          </div>
-          <div class="space-y-1">
-            <Label>Telefon</Label>
-            <Input v-model="form.phone" placeholder="123456789" />
-          </div>
-          <div class="space-y-1">
-            <Label>Hasło *</Label>
-            <Input v-model="form.password" type="password" placeholder="••••••" />
-          </div>
-          <div class="space-y-1">
-            <Label>Rola *</Label>
-            <select v-model="form.role"
-              class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm">
-              <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
-            </select>
-          </div>
+        <div class="space-y-1">
+          <Label>Nazwisko *</Label>
+          <Input v-model="form.lastName" placeholder="Kowalski" />
         </div>
-        <div class="flex gap-2 mt-4">
-          <Button @click="saveUser">Utwórz</Button>
-          <Button variant="outline" @click="closeForm">Anuluj</Button>
+        <div class="space-y-1">
+          <Label>Email *</Label>
+          <Input v-model="form.email" type="email" placeholder="jan@example.com" />
         </div>
-      </CardContent>
-    </Card>
+        <div class="space-y-1">
+          <Label>Telefon</Label>
+          <Input v-model="form.phone" placeholder="123456789" />
+        </div>
+        <div v-if="!editingId" class="space-y-1">
+          <Label>Hasło *</Label>
+          <Input v-model="form.password" type="password" placeholder="••••••" />
+        </div>
+        <div class="space-y-1">
+          <Label>Rola *</Label>
+          <select v-model="form.role"
+            class="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm">
+            <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-6">
+        <Button @click="saveUser">{{ editingId ? 'Zapisz zmiany' : 'Utwórz' }}</Button>
+        <Button variant="outline" @click="closeForm">Anuluj</Button>
+      </div>
+    </AppModal>
 
     <Card>
       <CardContent class="p-0">
@@ -183,7 +206,6 @@ onMounted(() => fetchUsers(0))
               <TableHead>Imię i nazwisko</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Telefon</TableHead>
-              <TableHead>Rola</TableHead>
               <TableHead>Status</TableHead>
               <TableHead class="text-right">Akcje</TableHead>
             </TableRow>
@@ -195,18 +217,10 @@ onMounted(() => fetchUsers(0))
               <TableCell class="text-muted-foreground">{{ u.email }}</TableCell>
               <TableCell class="text-muted-foreground">{{ u.phone ?? '—' }}</TableCell>
               <TableCell>
-                <select
-                  :value="u.role"
-                  @change="changeRole(u, ($event.target as HTMLSelectElement).value)"
-                  class="h-7 rounded-md border border-input bg-background px-2 text-xs shadow-sm"
-                >
-                  <option v-for="r in ROLES" :key="r" :value="r">{{ r }}</option>
-                </select>
-              </TableCell>
-              <TableCell>
                 <button
-                  @click="toggleActive(u)"
-                  class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full transition-colors"
+                  @click="u.role !== 'ADMIN' && toggleActive(u)"
+                  :disabled="u.role === 'ADMIN'"
+                  class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-default"
                   :class="u.isActive
                     ? 'bg-green-100 text-green-800 hover:bg-green-200'
                     : 'bg-red-100 text-red-800 hover:bg-red-200'"
@@ -216,14 +230,21 @@ onMounted(() => fetchUsers(0))
                 </button>
               </TableCell>
               <TableCell class="text-right">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="text-destructive hover:text-destructive"
-                  @click="deleteUser(u)"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </Button>
+                <div class="flex gap-1 justify-end">
+                  <Button variant="ghost" size="sm" @click="openEdit(u)"
+                    :disabled="u.role === 'ADMIN'">
+                    <Pencil class="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="text-destructive hover:text-destructive"
+                    @click="deleteUser(u)"
+                    :disabled="u.role === 'ADMIN'"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           </TableBody>

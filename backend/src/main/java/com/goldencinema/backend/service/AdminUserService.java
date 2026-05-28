@@ -16,6 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -53,14 +55,37 @@ public class AdminUserService {
         );
     }
 
+    @Transactional
     public UserSummaryDto updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
+        if (isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nie można edytować konta administratora");
+        }
         if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
         }
         if (request.getRole() != null && !request.getRole().isBlank()) {
-            user.setRoles(Set.of(findRoleByName(request.getRole())));
+            Role newRole = findRoleByName(request.getRole());
+            user.getRoles().clear();
+            user.getRoles().add(newRole);
+        }
+        if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null && !request.getLastName().isBlank()) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            if (!request.getEmail().equalsIgnoreCase(user.getEmail()) &&
+                    userRepository.findByEmail(request.getEmail()).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Użytkownik z tym emailem już istnieje");
+            }
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone().isBlank() ? null : request.getPhone());
         }
         user.setUpdatedAt(LocalDateTime.now());
         return toDto(userRepository.save(user));
