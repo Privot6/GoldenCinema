@@ -75,27 +75,27 @@ public class CinemaHallService {
         hall.setName(request.getName());
         hall.setUpdatedAt(LocalDateTime.now());
 
-        // Index existing seats by grid position so we can reuse their IDs.
-        // Reusing IDs keeps reservation_seats FK references intact.
+        // Index existing seats by (rowLabel:seatNumber) — the actual unique DB key.
+        // Reusing existing entity IDs keeps reservation_seats FK references intact.
         List<Seat> existingSeats = seatRepository.findAllByHallId(id);
-        Map<String, Seat> byPos = new HashMap<>();
+        Map<String, Seat> byLabel = new HashMap<>();
         for (Seat s : existingSeats) {
-            if (s.getGridRow() != null && s.getGridCol() != null) {
-                byPos.put(s.getGridRow() + ":" + s.getGridCol(), s);
-            }
+            byLabel.put(s.getRowLabel() + ":" + s.getSeatNumber(), s);
         }
 
         // Deactivate all existing seats; reactivate or create below.
         existingSeats.forEach(s -> s.setIsActive(false));
         seatRepository.saveAll(existingSeats);
+        // Flush deactivations to DB before any inserts to avoid unique constraint conflicts.
+        seatRepository.flush();
 
         int maxRow = 0, maxCol = 0;
         for (SeatGridItemDto dto : request.getSeats()) {
             if (dto.getGridRow() > maxRow) maxRow = dto.getGridRow();
             if (dto.getGridCol() > maxCol) maxCol = dto.getGridCol();
 
-            String key = dto.getGridRow() + ":" + dto.getGridCol();
-            Seat seat = byPos.getOrDefault(key, new Seat());
+            String labelKey = dto.getRowLabel() + ":" + dto.getSeatNumber();
+            Seat seat = byLabel.getOrDefault(labelKey, new Seat());
             seat.setHall(hall);
             seat.setGridRow(dto.getGridRow());
             seat.setGridCol(dto.getGridCol());

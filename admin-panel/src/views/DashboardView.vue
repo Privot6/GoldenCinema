@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api/axios'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,13 @@ const loading = ref(false)
 const statsLoading = ref(false)
 const error = ref('')
 
+const DASH_PAGE_SIZE = 10
+const dashPage = ref(1)
+const dashTotalPages = computed(() => Math.max(1, Math.ceil(screenings.value.length / DASH_PAGE_SIZE)))
+const pagedScreenings = computed(() =>
+  screenings.value.slice((dashPage.value - 1) * DASH_PAGE_SIZE, dashPage.value * DASH_PAGE_SIZE)
+)
+
 function statusVariant(status: Screening['status']) {
   if (status === 'ZAPLANOWANY') return 'default'
   if (status === 'ZAKONCZONY') return 'secondary'
@@ -68,6 +75,7 @@ async function fetchScreenings() {
       params: { sort: 'startTime,asc' }
     })
     screenings.value = response.data
+    dashPage.value = 1
   } catch {
     error.value = 'Nie udało się pobrać listy seansów. Sprawdź połączenie z serwerem.'
   } finally {
@@ -204,7 +212,9 @@ onMounted(fetchAll)
       <CardHeader class="pb-3">
         <CardTitle class="text-base">Nadchodzące seanse</CardTitle>
         <CardDescription>
-          {{ screenings.length > 0 ? `${screenings.length} seansów` : 'Brak danych' }}
+          {{ screenings.length > 0
+            ? `${screenings.length} seansów — strona ${dashPage} z ${dashTotalPages}`
+            : 'Brak danych' }}
         </CardDescription>
       </CardHeader>
       <CardContent class="p-0">
@@ -223,7 +233,7 @@ onMounted(fetchAll)
             <TableEmpty v-if="!loading && screenings.length === 0">
               <span class="text-muted-foreground text-sm">Brak seansów do wyświetlenia</span>
             </TableEmpty>
-            <TableRow v-for="s in screenings" :key="s.id">
+            <TableRow v-for="s in pagedScreenings" :key="s.id">
               <TableCell class="font-medium text-foreground">{{ s.movie?.title ?? '—' }}</TableCell>
               <TableCell class="text-muted-foreground">{{ s.hall?.name ?? '—' }}</TableCell>
               <TableCell class="text-muted-foreground tabular-nums">{{ formatDate(s.startTime) }}</TableCell>
@@ -237,6 +247,15 @@ onMounted(fetchAll)
         </Table>
         <div v-if="loading" class="space-y-3 p-4">
           <div v-for="i in 5" :key="i" class="h-10 rounded-md bg-secondary/50 animate-pulse" />
+        </div>
+        <div v-if="dashTotalPages > 1" class="flex items-center justify-between px-4 py-3 border-t">
+          <span class="text-sm text-muted-foreground">
+            Strona {{ dashPage }} z {{ dashTotalPages }} ({{ screenings.length }} seansów)
+          </span>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" :disabled="dashPage === 1" @click="dashPage--">Poprzednia</Button>
+            <Button variant="outline" size="sm" :disabled="dashPage === dashTotalPages" @click="dashPage++">Następna</Button>
+          </div>
         </div>
       </CardContent>
     </Card>
