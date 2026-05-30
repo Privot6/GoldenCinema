@@ -16,6 +16,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+/**
+ * Serwis obsługujący rejestrację i logowanie użytkowników.
+ * Generuje tokeny JWT po pomyślnym uwierzytelnieniu.
+ */
 @Service
 public class AuthService {
 
@@ -34,6 +38,13 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
+    /**
+     * Rejestruje nowego użytkownika z rolą USER i zwraca token JWT.
+     *
+     * @param request dane rejestracyjne
+     * @return token JWT i typ tokenu
+     * @throws UserAlreadyExistsException gdy email jest już zajęty
+     */
     public LoginResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new UserAlreadyExistsException("Ten adres email jest już zajęty");
@@ -61,6 +72,13 @@ public class AuthService {
         return new LoginResponse(token, "Bearer");
     }
 
+    /**
+     * Uwierzytelnia użytkownika i zwraca token JWT.
+     *
+     * @param request dane logowania (email, hasło)
+     * @return token JWT i typ tokenu
+     * @throws InvalidCredentialsException gdy email lub hasło jest nieprawidłowe, lub konto jest nieaktywne
+     */
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Nieprawidłowy email lub hasło"));

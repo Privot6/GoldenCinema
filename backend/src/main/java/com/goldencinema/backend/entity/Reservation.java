@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Encja reprezentująca rezerwację biletu — powiązanie użytkownika z seansem i wybranymi miejscami. */
 @Entity
 @Table(name = "reservations")
 public class Reservation {

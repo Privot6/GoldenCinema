@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Serwis obsługujący tworzenie, anulowanie i przeglądanie rezerwacji biletów.
+ * Integruje się ze Stripe w celu tworzenia sesji płatności.
+ */
 @Service
 public class ReservationService {
 
@@ -57,6 +61,16 @@ public class ReservationService {
         this.reservationStatusHistoryRepository = reservationStatusHistoryRepository;
     }
 
+    /**
+     * Tworzy rezerwację dla zalogowanego użytkownika i inicjuje sesję płatności Stripe.
+     * Weryfikuje dostępność wybranych miejsc przed zapisem.
+     *
+     * @param request        dane rezerwacji (seans, miejsca, typy biletów)
+     * @param authentication kontekst zalogowanego użytkownika
+     * @return rezerwacja z kodem, statusem, ceną i URL do płatności
+     * @throws StripeException          gdy nie uda się utworzyć sesji płatności
+     * @throws ResponseStatusException  (409 Conflict) gdy wybrane miejsce jest już zajęte
+     */
     public ReservationPaymentResponse createReservationPayment(CreateReservationRequest request,
                                                                Authentication authentication) throws StripeException {
         validateRequest(request);
@@ -129,6 +143,15 @@ public class ReservationService {
         );
     }
 
+    /**
+     * Generuje nowy URL do płatności Stripe dla istniejącej, nieopłaconej rezerwacji.
+     *
+     * @param reservationId identyfikator rezerwacji
+     * @return URL do sesji płatności Stripe
+     * @throws StripeException         gdy nie uda się utworzyć sesji
+     * @throws ResponseStatusException (403) gdy rezerwacja należy do innego użytkownika
+     * @throws ResponseStatusException (400) gdy rezerwacja nie jest w stanie OCZEKUJACA
+     */
     public CheckoutUrlResponse createCheckoutUrlForExistingReservation(Long reservationId) throws StripeException {
         User user = getCurrentUser();
 
@@ -181,6 +204,11 @@ public class ReservationService {
         return Session.create(params);
     }
 
+    /**
+     * Zwraca wszystkie rezerwacje zalogowanego użytkownika.
+     *
+     * @return lista rezerwacji bieżącego użytkownika
+     */
     public List<ReservationResponse> getMyReservations() {
         User user = getCurrentUser();
 
@@ -189,6 +217,15 @@ public class ReservationService {
                 .map(this::mapToReservationResponse)
                 .toList();
     }
+    /**
+     * Anuluje rezerwację przez klienta. Zapisuje historię zmiany statusu.
+     *
+     * @param reservationId identyfikator rezerwacji
+     * @param clientEmail   email zalogowanego klienta (weryfikacja właściciela)
+     * @return zaktualizowana rezerwacja ze statusem ANULOWANA
+     * @throws ResponseStatusException (403) gdy rezerwacja należy do innego użytkownika
+     * @throws ResponseStatusException (409) gdy rezerwacja jest już anulowana lub w niedozwolonym stanie
+     */
     @Transactional
     public ReservationResponse cancelByClient(Long reservationId, String clientEmail) {
         Reservation reservation = reservationRepository.findById(reservationId)

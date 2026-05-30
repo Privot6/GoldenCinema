@@ -15,6 +15,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * Serwis obsługujący funkcje pracownika kina.
+ * Zarządza weryfikacją biletów, podglądem rezerwacji i zmianą statusów z walidacją dozwolonych przejść.
+ */
 @Service
 public class EmployeeService {
 
@@ -37,6 +41,13 @@ public class EmployeeService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Zwraca rezerwacje, opcjonalnie filtrowane po sansie.
+     * Bez filtra zwraca rezerwacje na nadchodzące seanse, posortowane po czasie.
+     *
+     * @param screeningId opcjonalny identyfikator seansu; jeśli null, zwraca przyszłe seanse
+     * @return lista rezerwacji z danymi klientów i seansów
+     */
     @Transactional(readOnly = true)
     public List<EmployeeReservationDto> getReservations(Long screeningId) {
         List<Reservation> reservations;
@@ -55,6 +66,16 @@ public class EmployeeService {
                 .toList();
     }
 
+    /**
+     * Zmienia status rezerwacji z walidacją dozwolonych przejść.
+     * Zapisuje historię zmiany statusu.
+     *
+     * @param id            identyfikator rezerwacji
+     * @param newStatus     nowy status rezerwacji
+     * @param employeeEmail email pracownika wykonującego zmianę
+     * @return zaktualizowana rezerwacja
+     * @throws ResponseStatusException (422) gdy przejście statusu jest niedozwolone
+     */
     @Transactional
     public EmployeeReservationDto updateStatus(Long id, ReservationStatus newStatus, String employeeEmail) {
         Reservation reservation = reservationRepository.findById(id)
@@ -93,6 +114,12 @@ public class EmployeeService {
         return toEmployeeReservationDto(reservation);
     }
 
+    /**
+     * Weryfikuje rezerwację na podstawie unikalnego kodu (np. z kodu QR na bilecie).
+     *
+     * @param code unikalny kod rezerwacji
+     * @return wynik weryfikacji z informacją czy bilet jest ważny i danymi seansu
+     */
     @Transactional(readOnly = true)
     public ReservationVerificationDto verifyByCode(String code) {
         Reservation r = reservationRepository.findByReservationCode(code)

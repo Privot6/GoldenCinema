@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+/** Encja reprezentująca konto użytkownika systemu (klient, pracownik lub administrator). */
 @Entity
 @Table(name = "users")
 public class User {

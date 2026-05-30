@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 
+/** Encja cennika — definiuje mnożnik ceny dla danego typu biletu. */
 @Entity
 @Table(name = "price_list")
 public class PriceList {

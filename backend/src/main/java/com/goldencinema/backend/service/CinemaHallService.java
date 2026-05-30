@@ -16,6 +16,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Serwis zarządzający salami kinowymi i układem miejsc.
+ */
 @Service
 public class CinemaHallService {
 
@@ -27,12 +30,23 @@ public class CinemaHallService {
         this.seatRepository = seatRepository;
     }
 
+    /**
+     * Zwraca listę wszystkich sal kinowych.
+     *
+     * @return lista sal z id i nazwą
+     */
     public List<HallDto> getAllHalls() {
         return hallRepository.findAll().stream()
                 .map(h -> new HallDto(h.getId(), h.getName()))
                 .toList();
     }
 
+    /**
+     * Tworzy nową salę kinową wraz z pełnym układem miejsc.
+     *
+     * @param request dane sali (nazwa, lista miejsc z pozycjami w siatce)
+     * @return utworzona sala z listą miejsc
+     */
     @Transactional
     public CinemaHallLayoutResponse createHall(CinemaHallCreateRequest request) {
         CinemaHall hall = new CinemaHall();
@@ -61,12 +75,26 @@ public class CinemaHallService {
         return buildLayoutResponse(hall);
     }
 
+    /**
+     * Zwraca pełny układ miejsc dla wybranej sali.
+     *
+     * @param id identyfikator sali
+     * @return sala z listą aktywnych miejsc
+     */
     public CinemaHallLayoutResponse getHallLayout(Long id) {
         CinemaHall hall = hallRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Hall not found: " + id));
         return buildLayoutResponse(hall);
     }
 
+    /**
+     * Aktualizuje układ miejsc istniejącej sali.
+     * Zachowuje ID istniejących miejsc (po rowLabel:seatNumber), by nie zerwać FK rezerwacji.
+     *
+     * @param id      identyfikator sali
+     * @param request nowe dane sali z układem miejsc
+     * @return zaktualizowana sala z nowym układem miejsc
+     */
     @Transactional
     public CinemaHallLayoutResponse updateHallLayout(Long id, CinemaHallCreateRequest request) {
         CinemaHall hall = hallRepository.findById(id)
@@ -112,6 +140,11 @@ public class CinemaHallService {
         return buildLayoutResponse(hall);
     }
 
+    /**
+     * Usuwa salę kinową o podanym identyfikatorze.
+     *
+     * @param id identyfikator sali do usunięcia
+     */
     public void deleteHall(Long id) {
         if (!hallRepository.existsById(id)) {
             throw new RuntimeException("Hall not found: " + id);

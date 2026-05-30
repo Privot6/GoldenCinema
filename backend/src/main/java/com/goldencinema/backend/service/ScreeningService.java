@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Serwis zarządzający seansami kinowymi i dostępnością miejsc.
+ */
 @Service
 public class ScreeningService {
 
@@ -54,6 +57,11 @@ public class ScreeningService {
         this.cinemaHallRepository = cinemaHallRepository;
     }
 
+    /**
+     * Zwraca listę zaplanowanych seansów od bieżącego momentu.
+     *
+     * @return lista nadchodzących seansów
+     */
     public List<ScreeningResponse> getUpcomingScreenings() {
         return screeningRepository.findUpcomingScreenings(
                         LocalDateTime.now(),
@@ -64,6 +72,12 @@ public class ScreeningService {
                 .toList();
     }
 
+    /**
+     * Zwraca nadchodzące seanse dla konkretnego filmu.
+     *
+     * @param movieId identyfikator filmu
+     * @return lista seansów danego filmu
+     */
     public List<ScreeningResponse> getUpcomingScreeningsByMovieId(Long movieId) {
         return screeningRepository.findUpcomingScreeningsByMovieId(
                         movieId,
@@ -75,6 +89,13 @@ public class ScreeningService {
                 .toList();
     }
 
+    /**
+     * Zwraca układ miejsc z informacją o dostępności dla danego seansu.
+     * Miejsca z aktywną rezerwacją (OCZEKUJACA lub POTWIERDZONA) są oznaczone jako zajęte.
+     *
+     * @param screeningId identyfikator seansu
+     * @return lista rzędów z miejscami i ich dostępnością
+     */
     public List<SeatRowDto> getSeatAvailabilityForScreening(Long screeningId) {
         Screening screening = screeningRepository.findById(screeningId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Screening not found"));
@@ -116,6 +137,13 @@ public class ScreeningService {
                 .toList();
     }
 
+    /**
+     * Zwraca stronicowaną listę wszystkich seansów, posortowanych malejąco po czasie rozpoczęcia.
+     *
+     * @param page numer strony (od 0)
+     * @param size liczba elementów na stronie
+     * @return strona seansów z metadanymi paginacji
+     */
     public PagedResponse<ScreeningResponse> getAllScreeningsPaged(int page, int size) {
         Page<Screening> result = screeningRepository.findAllWithMovieAndHall(
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startTime")));
@@ -129,6 +157,12 @@ public class ScreeningService {
         );
     }
 
+    /**
+     * Tworzy nowy seans w repertuarze.
+     *
+     * @param request dane seansu (film, sala, czas, cena bazowa)
+     * @return utworzony seans jako DTO
+     */
     public ScreeningResponse createScreening(CreateScreeningRequest request) {
         Movie movie = movieRepository.findById(request.getMovieId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Movie not found"));
@@ -146,6 +180,13 @@ public class ScreeningService {
         return mapToScreeningResponse(screeningRepository.save(s));
     }
 
+    /**
+     * Aktualizuje dane istniejącego seansu.
+     *
+     * @param id      identyfikator seansu
+     * @param request nowe dane seansu
+     * @return zaktualizowany seans jako DTO
+     */
     public ScreeningResponse updateScreening(Long id, CreateScreeningRequest request) {
         Screening s = screeningRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Screening not found"));
@@ -162,6 +203,11 @@ public class ScreeningService {
         return mapToScreeningResponse(screeningRepository.save(s));
     }
 
+    /**
+     * Anuluje seans — ustawia status na ANULOWANY.
+     *
+     * @param id identyfikator seansu do anulowania
+     */
     public void cancelScreening(Long id) {
         Screening s = screeningRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Screening not found"));

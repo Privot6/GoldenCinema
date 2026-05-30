@@ -6,6 +6,10 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
+/**
+ * Singleton dostarczający skonfigurowane instancje klientów API.
+ * Używa Retrofit z OkHttp, automatycznie dołącza token JWT z [TokenStore] do każdego żądania.
+ */
 object NetworkModule {
     val BASE_URL = BuildConfig.BASE_URL
 

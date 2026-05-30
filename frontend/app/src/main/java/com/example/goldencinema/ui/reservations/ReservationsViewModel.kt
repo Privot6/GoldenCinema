@@ -7,19 +7,35 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/** Stan ekranu listy rezerwacji użytkownika. */
 sealed class ReservationsUiState {
+    /** Trwa pobieranie danych. */
     object Loading : ReservationsUiState()
+    /** Dane załadowane pomyślnie. */
     data class Success(val reservations: List<ReservationResponseDto>) : ReservationsUiState()
+    /** Błąd pobierania danych. */
     data class Error(val message: String) : ReservationsUiState()
 }
 
+/** Zdarzenie jednorazowe inicjujące płatność. */
 sealed class CheckoutEvent {
+    /** Brak aktywnego zdarzenia. */
     object Idle : CheckoutEvent()
+    /** Trwa pobieranie URL płatności. */
     object Loading : CheckoutEvent()
+    /** URL do sesji płatności Stripe gotowy do otwarcia. */
     data class OpenUrl(val url: String) : CheckoutEvent()
+    /** Błąd podczas pobierania URL płatności. */
     data class Error(val message: String) : CheckoutEvent()
 }
 
+/**
+ * ViewModel ekranu rezerwacji użytkownika. Obsługuje listę rezerwacji i inicjowanie płatności.
+ *
+ * @property state         aktualny stan listy rezerwacji
+ * @property isRefreshing  czy trwa odświeżanie pull-to-refresh
+ * @property checkoutEvent jednorazowe zdarzenie płatności
+ */
 class ReservationsViewModel : ViewModel() {
     private val _state = MutableStateFlow<ReservationsUiState>(ReservationsUiState.Loading)
     val state: StateFlow<ReservationsUiState> = _state.asStateFlow()
@@ -34,6 +50,7 @@ class ReservationsViewModel : ViewModel() {
         loadMyReservations()
     }
 
+    /** Pobiera listę rezerwacji zalogowanego użytkownika z API. */
     fun loadMyReservations() {
         viewModelScope.launch {
             _state.value = ReservationsUiState.Loading
@@ -46,6 +63,7 @@ class ReservationsViewModel : ViewModel() {
         }
     }
 
+    /** Odświeża listę rezerwacji (pull-to-refresh) bez pokazywania głównego loadera. */
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
@@ -60,6 +78,11 @@ class ReservationsViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Pobiera URL płatności Stripe dla podanej rezerwacji i emituje zdarzenie [CheckoutEvent.OpenUrl].
+     *
+     * @param reservationId identyfikator rezerwacji do opłacenia
+     */
     fun startPayment(reservationId: Long) {
         viewModelScope.launch {
             _checkoutEvent.value = CheckoutEvent.Loading
@@ -82,6 +105,7 @@ class ReservationsViewModel : ViewModel() {
         }
     }
 
+    /** Resetuje zdarzenie płatności do [CheckoutEvent.Idle] po obsłużeniu przez UI. */
     fun resetCheckoutEvent() {
         _checkoutEvent.value = CheckoutEvent.Idle
     }

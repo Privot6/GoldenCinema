@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/** Encja przechowująca historię zmian statusów rezerwacji — kto, kiedy i z jakiego powodu zmienił status. */
 @Entity
 @Table(name = "reservation_status_history")
 public class ReservationStatusHistory {

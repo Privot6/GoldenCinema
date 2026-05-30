@@ -22,6 +22,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Serwis administracyjny do zarządzania kontami użytkowników.
+ * Umożliwia tworzenie, edycję i usuwanie użytkowników przez administratora.
+ */
 @Service
 public class AdminUserService {
 
@@ -42,6 +46,13 @@ public class AdminUserService {
                 .toList();
     }
 
+    /**
+     * Zwraca stronicowaną listę użytkowników, posortowanych malejąco po dacie rejestracji.
+     *
+     * @param page numer strony (od 0)
+     * @param size liczba elementów na stronie
+     * @return strona użytkowników z metadanymi paginacji
+     */
     public PagedResponse<UserSummaryDto> getAllUsersPaged(int page, int size) {
         Page<User> result = userRepository.findAll(
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
@@ -55,6 +66,15 @@ public class AdminUserService {
         );
     }
 
+    /**
+     * Aktualizuje dane konta użytkownika. Nie można edytować konta administratora.
+     *
+     * @param id      identyfikator użytkownika
+     * @param request nowe dane użytkownika (pola opcjonalne — aktualizowane tylko podane)
+     * @return zaktualizowany użytkownik
+     * @throws ResponseStatusException (403) gdy próba edycji konta administratora
+     * @throws ResponseStatusException (409) gdy nowy email jest już zajęty
+     */
     @Transactional
     public UserSummaryDto updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
@@ -91,6 +111,13 @@ public class AdminUserService {
         return toDto(userRepository.save(user));
     }
 
+    /**
+     * Tworzy nowe konto użytkownika z podaną rolą.
+     *
+     * @param request dane nowego użytkownika (imię, nazwisko, email, hasło, rola)
+     * @return utworzony użytkownik
+     * @throws ResponseStatusException (409) gdy email jest już zajęty
+     */
     public UserSummaryDto createUser(CreateUserRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Użytkownik z tym emailem już istnieje");
@@ -110,6 +137,13 @@ public class AdminUserService {
         return toDto(userRepository.save(user));
     }
 
+    /**
+     * Usuwa konto użytkownika. Administrator nie może usunąć własnego konta.
+     *
+     * @param id               identyfikator użytkownika do usunięcia
+     * @param currentUserEmail email zalogowanego administratora
+     * @throws ResponseStatusException (409) gdy próba usunięcia własnego konta
+     */
     public void deleteUser(Long id, String currentUserEmail) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
