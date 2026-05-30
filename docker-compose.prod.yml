@@ -19,9 +19,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/privot6/goldencinema-backend:latest
     container_name: goldencinema-backend
     restart: unless-stopped
     environment:
@@ -40,9 +38,7 @@ services:
         condition: service_healthy
 
   admin-panel:
-    build:
-      context: ./admin-panel
-      dockerfile: Dockerfile
+    image: ghcr.io/privot6/goldencinema-admin:latest
     container_name: goldencinema-admin
     restart: unless-stopped
     depends_on:
