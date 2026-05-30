@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 
+/** Encja łącząca rezerwację z konkretnym miejscem na konkretnym seansie, zawierająca typ biletu i cenę. */
 @Entity
 @Table(name = "reservation_seats", uniqueConstraints = @UniqueConstraint(name = "uq_screening_seat", columnNames = {"screening_id", "seat_id"}))
 public class ReservationSeat {

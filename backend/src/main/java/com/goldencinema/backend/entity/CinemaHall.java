@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Encja reprezentująca salę kinową z jej układem miejsc. */
 @Entity
 @Table(name = "cinema_halls")
 public class CinemaHall {

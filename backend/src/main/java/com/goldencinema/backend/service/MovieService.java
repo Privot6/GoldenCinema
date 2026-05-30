@@ -13,6 +13,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Serwis zarządzający filmami w repertuarze kina.
+ */
 @Service
 public class MovieService {
 
@@ -24,6 +27,12 @@ public class MovieService {
         this.screeningRepository = screeningRepository;
     }
 
+    /**
+     * Tworzy nowy film i zapisuje go w bazie danych.
+     *
+     * @param request dane nowego filmu
+     * @return zapisany film jako DTO
+     */
     public MovieResponse createMovie(CreateMovieRequest request) {
         LocalDateTime now = LocalDateTime.now();
 
@@ -45,6 +54,11 @@ public class MovieService {
         return mapToResponse(savedMovie);
     }
 
+    /**
+     * Zwraca wszystkie filmy z bazy danych.
+     *
+     * @return lista filmów jako DTO
+     */
     public List<MovieResponse> getAllMovies() {
         return movieRepository.findAll()
                 .stream()
@@ -52,12 +66,27 @@ public class MovieService {
                 .toList();
     }
 
+    /**
+     * Zwraca film o podanym identyfikatorze.
+     *
+     * @param id identyfikator filmu
+     * @return film jako DTO
+     * @throws MovieNotFoundException gdy film nie istnieje
+     */
     public MovieResponse getMovieById(Long id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new MovieNotFoundException("Film nie został znaleziony"));
         return mapToResponse(movie);
     }
 
+    /**
+     * Aktualizuje dane istniejącego filmu.
+     *
+     * @param id      identyfikator filmu do zaktualizowania
+     * @param request nowe dane filmu
+     * @return zaktualizowany film jako DTO
+     * @throws MovieNotFoundException gdy film nie istnieje
+     */
     public MovieResponse updateMovie(Long id, CreateMovieRequest request) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new MovieNotFoundException("Film nie został znaleziony"));
@@ -73,6 +102,13 @@ public class MovieService {
         return mapToResponse(movieRepository.save(movie));
     }
 
+    /**
+     * Usuwa film z bazy danych. Nie można usunąć filmu z przypisanymi seansami.
+     *
+     * @param id identyfikator filmu do usunięcia
+     * @throws MovieNotFoundException    gdy film nie istnieje
+     * @throws ResponseStatusException   (409 Conflict) gdy film ma przypisane seanse
+     */
     public void deleteMovie(Long id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new MovieNotFoundException("Film nie został znaleziony"));

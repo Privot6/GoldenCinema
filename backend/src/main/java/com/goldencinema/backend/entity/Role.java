@@ -2,6 +2,7 @@ package com.goldencinema.backend.entity;
 
 import jakarta.persistence.*;
 
+/** Encja reprezentująca rolę użytkownika w systemie (USER, EMPLOYEE, ADMIN). */
 @Entity
 @Table(name = "roles")
 public class Role {

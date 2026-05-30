@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Kontroler panelu admina dostarczający statystyki kina.
+ * Zwraca zagregowane dane o użytkownikach, seansach i przychodach.
+ */
 @RestController
 @RequestMapping("/api/admin/stats")
 public class AdminStatsController {
@@ -34,6 +38,11 @@ public class AdminStatsController {
         this.reservationRepository = reservationRepository;
     }
 
+    /**
+     * Zwraca zagregowane statystyki kina: liczby użytkowników, seansów i przychody bieżącego miesiąca.
+     *
+     * @return obiekt ze statystykami (użytkownicy, seanse dziś/w tygodniu, sale, przychód miesięczny)
+     */
     @Transactional(readOnly = true)
     @GetMapping
     public StatsResponse getStats() {

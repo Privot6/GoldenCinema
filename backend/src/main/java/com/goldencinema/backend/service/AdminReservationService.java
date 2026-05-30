@@ -18,6 +18,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Serwis administracyjny do zarządzania rezerwacjami.
+ * Umożliwia przeglądanie wszystkich rezerwacji i zmianę ich statusów przez administratora.
+ */
 @Service
 public class AdminReservationService {
 
@@ -37,6 +41,13 @@ public class AdminReservationService {
                 .toList();
     }
 
+    /**
+     * Zwraca stronicowaną listę wszystkich rezerwacji, posortowanych malejąco po dacie utworzenia.
+     *
+     * @param page numer strony (od 0)
+     * @param size liczba elementów na stronie
+     * @return strona rezerwacji z metadanymi paginacji
+     */
     @Transactional(readOnly = true)
     public PagedResponse<AdminReservationDto> getAllReservationsPaged(int page, int size) {
         Page<Reservation> result = reservationRepository.findAllWithEagerLoad(
@@ -51,6 +62,16 @@ public class AdminReservationService {
         );
     }
 
+    /**
+     * Zmienia status rezerwacji przez administratora.
+     * Dozwolone przejścia: OCZEKUJACA→POTWIERDZONA, OCZEKUJACA→ANULOWANA, POTWIERDZONA→ANULOWANA.
+     *
+     * @param id         identyfikator rezerwacji
+     * @param newStatus  nowy status rezerwacji
+     * @param adminEmail email administratora wykonującego zmianę
+     * @return zaktualizowana rezerwacja
+     * @throws ResponseStatusException (409 Conflict) gdy przejście statusu jest niedozwolone
+     */
     @Transactional
     public AdminReservationDto updateStatus(Long id, ReservationStatus newStatus, String adminEmail) {
         Reservation reservation = reservationRepository.findById(id)

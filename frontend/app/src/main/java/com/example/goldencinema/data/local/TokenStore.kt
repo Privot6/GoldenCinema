@@ -7,12 +7,22 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.json.JSONObject
 
+/**
+ * Magazyn tokenów JWT z szyfrowaniem EncryptedSharedPreferences (AES256_GCM).
+ * Umożliwia bezpieczne przechowywanie, odczyt i walidację tokenu JWT.
+ */
 object TokenStore {
     private const val PREFS_NAME = "gc_secure_prefs"
     private const val KEY_TOKEN = "jwt_token"
 
     private var prefs: SharedPreferences? = null
 
+    /**
+     * Inicjalizuje magazyn. Musi być wywołane przed pierwszym użyciem (np. w Application.onCreate).
+     * W przypadku błędu szyfrowania używa nieszyfrowanych preferencji jako fallback.
+     *
+     * @param context kontekst aplikacji
+     */
     fun init(context: Context) {
         prefs = try {
             val masterKey = MasterKey.Builder(context)
@@ -30,16 +40,24 @@ object TokenStore {
         }
     }
 
+    /** Zapisuje token JWT w zaszyfrowanych preferencjach. */
     fun save(token: String) {
         prefs?.edit()?.putString(KEY_TOKEN, token)?.apply()
     }
 
+    /** Zwraca zapisany token JWT lub null jeśli brak tokenu. */
     fun get(): String? = prefs?.getString(KEY_TOKEN, null)
 
+    /** Usuwa zapisany token JWT (wylogowanie). */
     fun clear() {
         prefs?.edit()?.remove(KEY_TOKEN)?.apply()
     }
 
+    /**
+     * Dekoduje payload JWT i zwraca wartość pola "role".
+     *
+     * @return nazwa roli (np. "USER", "EMPLOYEE", "ADMIN") lub null gdy brak tokenu lub błąd
+     */
     fun getUserRole(): String? {
         val token = get() ?: return null
         return try {
@@ -52,6 +70,11 @@ object TokenStore {
         }
     }
 
+    /**
+     * Sprawdza czy token JWT jest ważny (nie wygasł) na podstawie claimu "exp".
+     *
+     * @return true jeśli token istnieje i nie wygasł, false w przeciwnym razie
+     */
     fun isTokenValid(): Boolean {
         val token = get() ?: return false
         return try {

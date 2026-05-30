@@ -8,24 +8,44 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/** Stan ładowania miejsc w sali dla danego seansu. */
 sealed class SeatsUiState {
+    /** Trwa pobieranie danych o miejscach. */
     object Loading : SeatsUiState()
+    /** Miejsca załadowane pomyślnie. */
     data class Success(val rows: List<SeatRowDto>) : SeatsUiState()
+    /** Błąd pobierania miejsc. */
     data class Error(val message: String) : SeatsUiState()
 }
 
+/** Stan procesu tworzenia rezerwacji. */
 sealed class ReservationUiState {
+    /** Brak aktywnej rezerwacji — ekran wyboru miejsc. */
     object Idle : ReservationUiState()
+    /** Trwa tworzenie rezerwacji. */
     object Loading : ReservationUiState()
+    /** Rezerwacja utworzona — URL do płatności gotowy. */
     data class ReadyForPayment(
         val reservationCode: String,
         val totalPrice: Double,
         val paymentUrl: String
     ) : ReservationUiState()
+    /** Konflikt — co najmniej jedno wybrane miejsce zostało zajęte przez innego użytkownika. */
     data class Conflict(val message: String) : ReservationUiState()
+    /** Inny błąd serwera lub sieciowy. */
     data class Error(val message: String) : ReservationUiState()
 }
 
+/**
+ * ViewModel ekranu wyboru miejsc dla danego seansu.
+ *
+ * @param screeningId  identyfikator seansu
+ * @param basePrice    cena bazowa biletu normalnego dla tego seansu
+ * @property seatsState      stan ładowania miejsc
+ * @property selectedSeatIds zbiór ID aktualnie wybranych miejsc
+ * @property totalPrice      łączna cena za wybrane miejsca
+ * @property reservationState stan procesu tworzenia rezerwacji
+ */
 class SeatSelectionViewModel(
     private val screeningId: Long,
     private val basePrice: Double
@@ -44,6 +64,7 @@ class SeatSelectionViewModel(
         loadSeats()
     }
 
+    /** Pobiera układ miejsc z dostępnością dla danego seansu. */
     fun loadSeats() {
         viewModelScope.launch {
             _seatsState.value = SeatsUiState.Loading
@@ -58,6 +79,12 @@ class SeatSelectionViewModel(
         }
     }
 
+    /**
+     * Przełącza wybór miejsca. Ignoruje niedostępne miejsca.
+     * Automatycznie aktualizuje [totalPrice] na podstawie liczby wybranych miejsc.
+     *
+     * @param seat miejsce do zaznaczenia lub odznaczenia
+     */
     fun toggleSeat(seat: SeatDto) {
         if (!seat.isAvailable) return
         val current = selectedSeatIds.value.toMutableSet()
@@ -66,6 +93,10 @@ class SeatSelectionViewModel(
         totalPrice.value = current.size * basePrice
     }
 
+    /**
+     * Tworzy rezerwację dla wybranych miejsc (wszystkie jako NORMALNY).
+     * Emituje [ReservationUiState.ReadyForPayment] z URL do Stripe po sukcesie.
+     */
     fun reserve() {
         val ids = selectedSeatIds.value.toList()
         if (ids.isEmpty()) return
@@ -102,11 +133,13 @@ class SeatSelectionViewModel(
         }
     }
 
+    /** Resetuje stan rezerwacji do [ReservationUiState.Idle] — np. po zamknięciu dialogu. */
     fun resetReservationState() {
         _reservationState.value = ReservationUiState.Idle
     }
 }
 
+/** Factory do tworzenia [SeatSelectionViewModel] z parametrami konstruktora. */
 class SeatSelectionViewModelFactory(
     private val screeningId: Long,
     private val basePrice: Double

@@ -16,6 +16,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 
+/**
+ * Serwis obsługujący webhooki Stripe i aktualizujący statusy rezerwacji na podstawie zdarzeń płatności.
+ */
 @Service
 public class PaymentService {
 
@@ -34,6 +37,15 @@ public class PaymentService {
         this.reservationStatusHistoryRepository = reservationStatusHistoryRepository;
     }
 
+    /**
+     * Przetwarza webhook Stripe, weryfikuje podpis i obsługuje zdarzenia płatności.
+     * Obsługiwane zdarzenia: checkout.session.completed, checkout.session.expired,
+     * checkout.session.async_payment_failed, payment_intent.payment_failed.
+     *
+     * @param payload   surowe ciało żądania w formacie JSON od Stripe
+     * @param sigHeader nagłówek {@code Stripe-Signature} do weryfikacji
+     * @throws ResponseStatusException (400) gdy podpis jest nieprawidłowy
+     */
     @Transactional
     public void handleWebhook(String payload, String sigHeader) {
         Stripe.apiKey = stripeApiKey;

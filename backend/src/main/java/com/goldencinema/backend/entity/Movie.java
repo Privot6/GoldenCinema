@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/** Encja reprezentująca film w repertuarze kina. */
 @Entity
 @Table(name = "movies")
 public class Movie {

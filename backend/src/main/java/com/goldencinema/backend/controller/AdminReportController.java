@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 
+/**
+ * Kontroler panelu admina do generowania raportów finansowych.
+ * Raporty są generowane i zwracane jako pliki PDF.
+ */
 @RestController
 @RequestMapping("/api/admin/reports")
 public class AdminReportController {
@@ -22,6 +26,13 @@ public class AdminReportController {
         this.reportService = reportService;
     }
 
+    /**
+     * Generuje raport zysku tygodniowego dla podanego zakresu dat.
+     *
+     * @param from data początkowa zakresu (format ISO: YYYY-MM-DD)
+     * @param to   data końcowa zakresu (format ISO: YYYY-MM-DD)
+     * @return plik PDF z raportem jako załącznik do pobrania
+     */
     @GetMapping("/weekly-profit")
     public ResponseEntity<byte[]> getWeeklyProfitReport(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

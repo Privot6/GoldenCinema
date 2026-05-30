@@ -2,6 +2,7 @@ package com.goldencinema.backend.entity;
 
 import jakarta.persistence.*;
 
+/** Encja reprezentująca pojedyncze miejsce w sali kinowej wraz z jego pozycją w siatce. */
 @Entity
 @Table(name = "seats", uniqueConstraints = @UniqueConstraint(name = "uq_seat", columnNames = {"hall_id", "row_label", "seat_number"}))
 public class Seat {

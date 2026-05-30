@@ -8,13 +8,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/** Stan skanera kodów QR pracownika. */
 sealed class ScanUiState {
+    /** Kamera aktywna — oczekiwanie na zeskanowanie kodu. */
     object Scanning : ScanUiState()
+    /** Trwa weryfikacja kodu w API. */
     object Loading : ScanUiState()
+    /** Rezerwacja znaleziona — wyświetlane szczegóły do potwierdzenia wejścia. */
     data class Found(val dto: ReservationVerificationDto) : ScanUiState()
+    /** Błąd weryfikacji lub sieciowy — automatycznie resetuje się po 3 sekundach. */
     data class Error(val message: String) : ScanUiState()
 }
 
+/**
+ * ViewModel skanera QR dla pracownika kina.
+ * Obsługuje skanowanie kodów QR z biletów, weryfikację rezerwacji i potwierdzenie wejścia.
+ *
+ * @property state aktualny stan skanera
+ */
 class QrScannerViewModel : ViewModel() {
 
     private val _state = MutableStateFlow<ScanUiState>(ScanUiState.Scanning)
@@ -22,6 +33,12 @@ class QrScannerViewModel : ViewModel() {
 
     @Volatile private var isProcessing = false
 
+    /**
+     * Obsługuje zeskanowany tekst z kodu QR. Ignoruje duplikaty skanów.
+     * Parsuje kod rezerwacji i weryfikuje go w API.
+     *
+     * @param rawText surowy tekst ze zeskanowanego kodu QR
+     */
     fun onQrCodeScanned(rawText: String) {
         if (isProcessing || _state.value !is ScanUiState.Scanning) return
         isProcessing = true
@@ -51,6 +68,11 @@ class QrScannerViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Potwierdza wejście — zmienia status rezerwacji na POTWIERDZONA i wraca do skanowania po 2 sekundach.
+     *
+     * @param reservationId identyfikator rezerwacji do potwierdzenia
+     */
     fun confirmEntry(reservationId: Long) {
         viewModelScope.launch {
             try {
@@ -64,6 +86,7 @@ class QrScannerViewModel : ViewModel() {
         }
     }
 
+    /** Resetuje skaner do stanu [ScanUiState.Scanning] — gotowy na kolejne skanowanie. */
     fun resetToScanning() {
         _state.value = ScanUiState.Scanning
         isProcessing = false

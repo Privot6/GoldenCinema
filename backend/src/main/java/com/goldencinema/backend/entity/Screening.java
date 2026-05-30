@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/** Encja reprezentująca seans kinowy — powiązanie filmu z salą i przedziałem czasowym. */
 @Entity
 @Table(name = "screenings")
 public class Screening {
