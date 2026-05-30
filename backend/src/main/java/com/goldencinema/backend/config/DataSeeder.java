@@ -172,21 +172,21 @@ public class DataSeeder implements ApplicationRunner {
     private List<Movie> seedMovies() {
         LocalDateTime now = LocalDateTime.now();
         String[][] data = {
-            {"Diuna: Część Druga",                       "Epicka kontynuacja adaptacji słynnej powieści Franka Herberta.",   "166", "PG-13", "Angielski",      "Polski",  "Sci-Fi"},
-            {"Deadpool & Wolverine",                     "Superbohaterowie w komediowej akcji.",                             "120", "R",     "Angielski",      "Polski",  "Akcja / Komedia"},
-            {"Kung Fu Panda 4",                          "Kolejna część przygód niedźwiedzia Po.",                           "94",  "G",     "Polski Dubbing", "",        "Animacja / Familijny"},
-            {"The Batman",                               "Mroczny rycerz powraca, by uratować Gotham.",                      "175", "PG-13", "Angielski",      "Polski",  "Thriller / Akcja"},
-            {"Oppenheimer",                              "Historia twórcy bomby atomowej i jego moralnych rozterek.",         "180", "R",     "Angielski",      "Polski",  "Dramat / Historyczny"},
-            {"Szybcy i Wściekli X",                      "Dominic Toretto i jego rodzina stawiają czoła nowym wrogom.",      "141", "PG-13", "Angielski",      "Polski",  "Akcja"},
-            {"Strażnicy Galaktyki 3",                    "Ostatnia misja strażników, by uratować Rocketa.",                  "150", "PG-13", "Angielski",      "Polski",  "Akcja / Sci-Fi"},
-            {"Transformers: Przebudzenie Bestii",        "Optimus Prime i nowi sojusznicy w walce o Ziemię.",               "127", "PG-13", "Angielski",      "Polski",  "Akcja / Sci-Fi"},
-            {"Indiana Jones i Artefakt Przeznaczenia",   "Ostatnia wielka przygoda doktora Jonesa.",                         "154", "PG-13", "Angielski",      "Polski",  "Przygodowy"},
-            {"Elemental",                                "Pixar o żywiołach i miłości ponad różnicami.",                    "101", "PG",    "Polski Dubbing", "",        "Animacja / Familijny"},
-            {"Wonka",                                    "Historia młodego, pełnego marzeń Willi Wonki.",                   "116", "PG",    "Angielski",      "Polski",  "Musical / Familijny"},
-            {"Napoleon",                                 "Epicki portret życia i upadku Napoleona Bonapartego.",             "158", "R",     "Angielski",      "Polski",  "Dramat Historyczny"},
-            {"Wicked",                                   "Zdjęcia z musicalu o czarownicach z Krainy Oz.",                  "160", "PG",    "Angielski",      "Polski",  "Musical"},
-            {"Kraven: Łowca",                            "Najbardziej niebezpieczny myśliwy Marvela w akcji.",              "127", "PG-13", "Angielski",      "Polski",  "Akcja / Superbohater"},
-            {"Nosferatu",                                "Mroczna, współczesna wersja klasycznego horroru.",                 "132", "R",     "Angielski",      "Polski",  "Horror"},
+            {"Diuna: Część Druga",                       "Epicka kontynuacja adaptacji słynnej powieści Franka Herberta.",   "166", "PG-13", "Angielski",      "Polski",  "Sci-Fi",               "https://image.tmdb.org/t/p/w500/xdfO6EB9e59qZpzmHxezTdPfTxZ.jpg"},
+            {"Deadpool & Wolverine",                     "Superbohaterowie w komediowej akcji.",                             "120", "R",     "Angielski",      "Polski",  "Akcja / Komedia",      "https://image.tmdb.org/t/p/w500/7Hi6mRLsQtTaEtKiHqSeRFR1TQ2.jpg"},
+            {"Kung Fu Panda 4",                          "Kolejna część przygód niedźwiedzia Po.",                           "94",  "G",     "Polski Dubbing", "",        "Animacja / Familijny", "https://image.tmdb.org/t/p/w500/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg"},
+            {"The Batman",                               "Mroczny rycerz powraca, by uratować Gotham.",                      "175", "PG-13", "Angielski",      "Polski",  "Thriller / Akcja",     "https://image.tmdb.org/t/p/w500/lGzesThPVrXijebOF2TQN0z92gZ.jpg"},
+            {"Oppenheimer",                              "Historia twórcy bomby atomowej i jego moralnych rozterek.",         "180", "R",     "Angielski",      "Polski",  "Dramat / Historyczny", "https://image.tmdb.org/t/p/w500/gBrW3l0GsN7fvrn6A7ofaw90qj4.jpg"},
+            {"Szybcy i Wściekli X",                      "Dominic Toretto i jego rodzina stawiają czoła nowym wrogom.",      "141", "PG-13", "Angielski",      "Polski",  "Akcja",                "https://image.tmdb.org/t/p/w500/3sFkBUkZtGb7bhVMi5uv1MdKlis.jpg"},
+            {"Strażnicy Galaktyki 3",                    "Ostatnia misja strażników, by uratować Rocketa.",                  "150", "PG-13", "Angielski",      "Polski",  "Akcja / Sci-Fi",       "https://image.tmdb.org/t/p/w500/yhk7mwR3sqEZYF1UDqIimXBy11J.jpg"},
+            {"Transformers: Przebudzenie Bestii",        "Optimus Prime i nowi sojusznicy w walce o Ziemię.",               "127", "PG-13", "Angielski",      "Polski",  "Akcja / Sci-Fi",       "https://image.tmdb.org/t/p/w500/aAoRVlCqV35rVqBDT3NgMfEC6bZ.jpg"},
+            {"Indiana Jones i Artefakt Przeznaczenia",   "Ostatnia wielka przygoda doktora Jonesa.",                         "154", "PG-13", "Angielski",      "Polski",  "Przygodowy",           "https://image.tmdb.org/t/p/w500/omZTGZm5wgBFEg6M66koqhm7PDL.jpg"},
+            {"Elemental",                                "Pixar o żywiołach i miłości ponad różnicami.",                    "101", "PG",    "Polski Dubbing", "",        "Animacja / Familijny", "https://image.tmdb.org/t/p/w500/fv3idA7yYUP1jt6TYy6l6AlUdQR.jpg"},
+            {"Wonka",                                    "Historia młodego, pełnego marzeń Willi Wonki.",                   "116", "PG",    "Angielski",      "Polski",  "Musical / Familijny",  "https://image.tmdb.org/t/p/w500/zSZaIThxwoums2KPE6V6s94BAWj.jpg"},
+            {"Napoleon",                                 "Epicki portret życia i upadku Napoleona Bonapartego.",             "158", "R",     "Angielski",      "Polski",  "Dramat Historyczny",   "https://image.tmdb.org/t/p/w500/2LGtFpKi4n335oXwRakPiXPPkO1.jpg"},
+            {"Wicked",                                   "Zdjęcia z musicalu o czarownicach z Krainy Oz.",                  "160", "PG",    "Angielski",      "Polski",  "Musical",              "https://image.tmdb.org/t/p/w500/xDGbZ0JJ3mYaGKy4Nzd9Kph6M9L.jpg"},
+            {"Kraven: Łowca",                            "Najbardziej niebezpieczny myśliwy Marvela w akcji.",              "127", "PG-13", "Angielski",      "Polski",  "Akcja / Superbohater", "https://image.tmdb.org/t/p/w500/13jNxuznbcVSSJPDhX8gbMcstKX.jpg"},
+            {"Nosferatu",                                "Mroczna, współczesna wersja klasycznego horroru.",                 "132", "R",     "Angielski",      "Polski",  "Horror",               "https://image.tmdb.org/t/p/w500/5qGIxdEO841C0tdY8vOdLoRVrr0.jpg"},
         };
         List<Movie> movies = new ArrayList<>();
         for (String[] row : data) {
@@ -195,7 +195,7 @@ public class DataSeeder implements ApplicationRunner {
             m.setDurationMinutes(Integer.parseInt(row[2]));
             m.setAgeRating(row[3]); m.setLanguage(row[4]);
             m.setSubtitles(row[5].isEmpty() ? null : row[5]);
-            m.setGenre(row[6]); m.setPosterUrl(""); m.setIsActive(true);
+            m.setGenre(row[6]); m.setPosterUrl(row[7]); m.setIsActive(true);
             m.setCreatedAt(now); m.setUpdatedAt(now);
             movies.add(movieRepository.save(m));
         }
