@@ -92,7 +92,7 @@ fun ProfileScreen(
                     Text(
                         text = "$firstName $lastName".trim().ifEmpty { email },
                         color = Color.White,
-                        fontSize = 22.sp,
+                        fontSize = 21.sp,
                         fontWeight = FontWeight.Bold
                     )
 
