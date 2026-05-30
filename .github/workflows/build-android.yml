@@ -24,6 +24,10 @@ jobs:
         working-directory: frontend
         run: chmod +x gradlew
 
+      - name: Set BASE_URL
+        working-directory: frontend
+        run: echo "BASE_URL=https://goldencinema.bieda.it/api/" >> local.properties
+
       - name: Build debug APK
         working-directory: frontend
         run: ./gradlew assembleDebug
