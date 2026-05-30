@@ -9,6 +9,8 @@ import UsersView from '@/views/UsersView.vue'
 import ReservationsView from '@/views/ReservationsView.vue'
 import ReportsView from '@/views/ReportsView.vue'
 import AdminLayout from '@/components/AdminLayout.vue'
+import PaymentSuccessView from '@/views/PaymentSuccessView.vue'
+import PaymentCancelView from '@/views/PaymentCancelView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +23,16 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView
+    },
+    {
+      path: '/success',
+      name: 'payment-success',
+      component: PaymentSuccessView
+    },
+    {
+      path: '/cancel',
+      name: 'payment-cancel',
+      component: PaymentCancelView
     },
     {
       path: '/',
