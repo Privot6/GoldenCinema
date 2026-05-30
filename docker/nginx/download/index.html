@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoldenCinema – Pobierz aplikację</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0f;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #e0d9c8;
+    }
+
+    .card {
+      background: #12121a;
+      border: 1px solid #2a2a3a;
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+
+    .logo {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #d4a843, #f0c060);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #6b6b80;
+      margin-bottom: 36px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8888a0;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: #1a1a26;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      color: #e0d9c8;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 16px;
+    }
+
+    input[type="password"]:focus {
+      border-color: #d4a843;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #d4a843, #c09030);
+      border: none;
+      border-radius: 8px;
+      color: #0a0a0f;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.88; }
+
+    .error {
+      display: none;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #e05555;
+    }
+
+    .download-section {
+      display: none;
+      margin-top: 24px;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #d4a843, #c09030);
+      border-radius: 8px;
+      color: #0a0a0f;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    .download-btn:hover { opacity: 0.88; }
+
+    .download-info {
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: #6b6b80;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">GoldenCinema</div>
+    <p class="subtitle">Aplikacja mobilna na Android</p>
+
+    <div id="auth-form">
+      <label for="password">Hasło dostępu</label>
+      <input type="password" id="password" placeholder="Wprowadź hasło" autocomplete="off">
+      <button onclick="checkPassword()">Odblokuj pobieranie</button>
+      <p class="error" id="error-msg">Nieprawidłowe hasło</p>
+    </div>
+
+    <div class="download-section" id="download-section">
+      <a href="/download/app.apk" class="download-btn" download="GoldenCinema.apk">
+        &#8659; Pobierz APK
+      </a>
+      <p class="download-info">Plik APK · Android 8.0+</p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('password').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkPassword();
+    });
+
+    function checkPassword() {
+      const val = document.getElementById('password').value;
+      const err = document.getElementById('error-msg');
+      if (val === 'GoldenCinema') {
+        document.getElementById('auth-form').style.display = 'none';
+        document.getElementById('download-section').style.display = 'block';
+      } else {
+        err.style.display = 'block';
+        document.getElementById('password').value = '';
+      }
+    }
+  </script>
+</body>
+</html>
