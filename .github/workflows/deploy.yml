@@ -12,16 +12,17 @@ jobs:
 
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.MIKRUS_HOST }}
-          username: ${{ secrets.MIKRUS_USER }}
-          key: ${{ secrets.MIKRUS_SSH_KEY }}
-          port: ${{ secrets.MIKRUS_PORT }}
-          script: |
-            cd /root/GoldenCinema
-            git pull origin main
-            docker compose -f docker-compose.prod.yml build --no-cache
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            docker image prune -f
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MIKRUS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.MIKRUS_PORT }} ${{ secrets.MIKRUS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -p ${{ secrets.MIKRUS_PORT }} \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.MIKRUS_USER }}@${{ secrets.MIKRUS_HOST }} \
+            'cd /root/GoldenCinema && git pull origin main && docker compose -f docker-compose.prod.yml build --no-cache && docker compose -f docker-compose.prod.yml up -d --remove-orphans && docker image prune -f'
