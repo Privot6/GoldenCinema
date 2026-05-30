@@ -17,7 +17,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.MIKRUS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p ${{ secrets.MIKRUS_PORT }} ${{ secrets.MIKRUS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -p ${{ secrets.MIKRUS_PORT }} ${{ secrets.MIKRUS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy
         run: |
