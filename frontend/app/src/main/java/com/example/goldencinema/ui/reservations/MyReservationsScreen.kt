@@ -174,6 +174,9 @@ fun MyReservationsScreen(
                                     isPaymentLoading = isCheckoutLoading,
                                     onPayClick = if (reservation.status == "OCZEKUJACA") {
                                         { viewModel.startPayment(reservation.id) }
+                                    } else null,
+                                    onCancelClick = if (reservation.status == "OCZEKUJACA" || reservation.status == "POTWIERDZONA") {
+                                        { viewModel.cancelReservation(reservation.id) }
                                     } else null
                                 )
                             }
@@ -189,10 +192,12 @@ fun MyReservationsScreen(
 fun ReservationTicket(
     reservation: ReservationResponseDto,
     isPaymentLoading: Boolean = false,
-    onPayClick: (() -> Unit)? = null
+    onPayClick: (() -> Unit)? = null,
+    onCancelClick: (() -> Unit)? = null
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
+    var showCancelDialog by remember { mutableStateOf(false) }
 
     val seats = reservation.reservedSeatsDto
         .joinToString(", ") { "${it.rowLabel}${it.seatNumber}" }
@@ -430,8 +435,42 @@ fun ReservationTicket(
                             Text("Pokaż QR", color = Color.Black, fontWeight = FontWeight.Bold)
                         }
                     }
+
+                    if (onCancelClick != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { showCancelDialog = true },
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE53935))
+                        ) {
+                            Text("Anuluj rezerwację", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
+    }
+
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelDialog = false },
+            containerColor = Color(0xFF1E1E1E),
+            title = { Text("Anulować rezerwację?", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("Ta operacja jest nieodwracalna. Rezerwacja zostanie anulowana.", color = Color.Gray) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCancelDialog = false
+                    onCancelClick?.invoke()
+                }) {
+                    Text("Tak, anuluj", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelDialog = false }) {
+                    Text("Wróć", color = CinemaGold)
+                }
+            }
+        )
     }
 }

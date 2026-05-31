@@ -1,9 +1,12 @@
 package com.goldencinema.backend.controller;
 
+import com.goldencinema.backend.dto.CreateScreeningRequest;
 import com.goldencinema.backend.dto.EmployeeReservationDto;
 import com.goldencinema.backend.dto.ReservationVerificationDto;
+import com.goldencinema.backend.dto.ScreeningResponse;
 import com.goldencinema.backend.dto.UpdateReservationStatusRequest;
 import com.goldencinema.backend.service.EmployeeService;
+import com.goldencinema.backend.service.ScreeningService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +21,11 @@ import java.util.List;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final ScreeningService screeningService;
 
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService, ScreeningService screeningService) {
         this.employeeService = employeeService;
+        this.screeningService = screeningService;
     }
 
     /**
@@ -60,5 +65,16 @@ public class EmployeeController {
             @RequestBody UpdateReservationStatusRequest request,
             Authentication authentication) {
         return employeeService.updateStatus(id, request.status(), authentication.getName());
+    }
+
+    @GetMapping("/screenings/{id}")
+    public ScreeningResponse getScreening(@PathVariable Long id) {
+        return screeningService.getScreeningById(id);
+    }
+
+    @PutMapping("/screenings/{id}")
+    public ScreeningResponse updateScreening(@PathVariable Long id,
+                                             @RequestBody CreateScreeningRequest request) {
+        return screeningService.updateScreening(id, request);
     }
 }

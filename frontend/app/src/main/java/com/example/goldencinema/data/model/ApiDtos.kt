@@ -105,3 +105,12 @@ data class ReservationVerificationDto(
 )
 
 data class UpdateStatusRequest(val status: String)
+
+// ── Employee Screening ────────────────────────────────────────────────────────
+data class UpdateScreeningRequest(
+    val movieId: Long,
+    val hallId: Long,
+    val startTime: String,
+    val endTime: String,
+    val basePrice: Double
+)

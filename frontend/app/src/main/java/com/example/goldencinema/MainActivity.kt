@@ -47,6 +47,11 @@ class MainActivity : ComponentActivity() {
                     composable("scanner") {
                         QrScannerScreen(navController)
                     }
+                    composable("edit-screening/{screeningId}") { backStack ->
+                        val screeningId = backStack.arguments?.getString("screeningId")?.toLong()
+                            ?: return@composable
+                        ScreeningEditScreen(screeningId = screeningId, navController = navController)
+                    }
                 }
             }
         }
