@@ -205,7 +205,7 @@ fun ScreeningEditScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(7.dp))
 
                     Button(
                         onClick = {
