@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">GoldenCinema</string>
+    <string name="app_name">Golden Cinema</string>
     <string name="login_title">Logowanie</string>
     <string name="register_title">Rejestracja</string>
     <string name="username">Nazwa Użytkownika</string>
