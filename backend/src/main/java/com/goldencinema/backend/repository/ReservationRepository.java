@@ -80,4 +80,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );
+
+    @Query(value = """
+        SELECT TO_CHAR(r.created_at, 'YYYY-MM-DD') AS date,
+               COALESCE(SUM(r.total_price), 0)      AS revenue
+        FROM reservations r
+        WHERE r.status = 'POTWIERDZONA'
+          AND r.created_at >= :from
+        GROUP BY TO_CHAR(r.created_at, 'YYYY-MM-DD')
+        ORDER BY date ASC
+    """, nativeQuery = true)
+    List<Object[]> getDailyRevenueRaw(@Param("from") LocalDateTime from);
 }
