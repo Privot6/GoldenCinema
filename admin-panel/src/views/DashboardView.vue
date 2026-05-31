@@ -110,7 +110,7 @@ const chartDataset = computed(() => ({
   datasets: [{
     label: 'Przychód (PLN)',
     data: chartData.value.map(d => d.revenue),
-    backgroundColor: 'hsl(var(--primary) / 0.8)'
+    backgroundColor: 'hsl(43, 96%, 58%, 0.8)'
   }]
 }))
 

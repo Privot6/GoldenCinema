@@ -131,6 +131,13 @@ public class ScreeningService {
                 .toList();
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ScreeningResponse getScreeningById(Long id) {
+        Screening s = screeningRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seans nie istnieje"));
+        return mapToScreeningResponse(s);
+    }
+
     public List<ScreeningResponse> getAllScreenings() {
         return screeningRepository.findAllWithMovieAndHall().stream()
                 .map(this::mapToScreeningResponse)

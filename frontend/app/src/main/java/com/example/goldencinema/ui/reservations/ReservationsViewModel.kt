@@ -109,4 +109,16 @@ class ReservationsViewModel : ViewModel() {
     fun resetCheckoutEvent() {
         _checkoutEvent.value = CheckoutEvent.Idle
     }
+
+    /** Anuluje rezerwację użytkownika i odświeża listę po sukcesie. */
+    fun cancelReservation(reservationId: Long) {
+        viewModelScope.launch {
+            try {
+                val response = NetworkModule.reservationApi.cancelReservation(reservationId)
+                if (response.isSuccessful) {
+                    loadMyReservations()
+                }
+            } catch (_: Exception) { }
+        }
+    }
 }

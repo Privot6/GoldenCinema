@@ -3,6 +3,7 @@ package com.example.goldencinema
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -34,4 +35,12 @@ interface ReservationApi {
      */
     @GET("reservations/{id}/checkout")
     suspend fun getCheckoutUrl(@Path("id") reservationId: Long): Response<CheckoutUrlDto>
+
+    /**
+     * Anuluje rezerwację przez użytkownika.
+     *
+     * @param reservationId identyfikator rezerwacji do anulowania
+     */
+    @PATCH("reservations/{id}/cancel")
+    suspend fun cancelReservation(@Path("id") reservationId: Long): Response<Unit>
 }

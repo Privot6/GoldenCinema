@@ -66,6 +66,7 @@ fun RepertuarScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var query by remember { mutableStateOf("") }
+    val isEmployee = remember { TokenStore.getUserRole() == "EMPLOYEE" }
 
     Scaffold(
         topBar = {
@@ -173,14 +174,19 @@ fun RepertuarScreen(
                                 screenings = screenings,
                                 isExpanded = isExpanded,
                                 selectedDate = selectedDate,
+                                isEmployee = isEmployee,
                                 onHeaderClick = {
                                     expandedMovieId = if (isExpanded) null else movie.id
                                 },
                                 onDateSelected = { date -> selectedDates[movie.id] = date },
                                 onScreeningSelected = { screening ->
-                                    navController.navigate(
-                                        "seats/${screening.id}/${String.format(java.util.Locale.US, "%.2f", screening.basePrice)}"
-                                    )
+                                    if (isEmployee) {
+                                        navController.navigate("edit-screening/${screening.id}")
+                                    } else {
+                                        navController.navigate(
+                                            "seats/${screening.id}/${String.format(java.util.Locale.US, "%.2f", screening.basePrice)}"
+                                        )
+                                    }
                                 }
                             )
                         }
@@ -199,6 +205,7 @@ fun MovieCard(
     screenings: List<ScreeningDto>,
     isExpanded: Boolean,
     selectedDate: String?,
+    isEmployee: Boolean = false,
     onHeaderClick: () -> Unit,
     onDateSelected: (String) -> Unit,
     onScreeningSelected: (ScreeningDto) -> Unit
@@ -322,6 +329,7 @@ fun MovieCard(
                             screeningsForDate.forEachIndexed { index, screening ->
                                 ScreeningRow(
                                     screening = screening,
+                                    isEmployee = isEmployee,
                                     onClick = { onScreeningSelected(screening) }
                                 )
                                 if (index < screeningsForDate.lastIndex) {
@@ -337,7 +345,7 @@ fun MovieCard(
 }
 
 @Composable
-fun ScreeningRow(screening: ScreeningDto, onClick: () -> Unit) {
+fun ScreeningRow(screening: ScreeningDto, isEmployee: Boolean = false, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -381,11 +389,13 @@ fun ScreeningRow(screening: ScreeningDto, onClick: () -> Unit) {
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
             modifier = Modifier.height(34.dp),
             shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = CinemaGold)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isEmployee) Color(0xFF2A2A2A) else CinemaGold
+            )
         ) {
             Text(
-                stringResource(R.string.buy_ticket_button),
-                color = Color.Black,
+                if (isEmployee) "Edytuj" else stringResource(R.string.buy_ticket_button),
+                color = if (isEmployee) CinemaGold else Color.Black,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp
             )
