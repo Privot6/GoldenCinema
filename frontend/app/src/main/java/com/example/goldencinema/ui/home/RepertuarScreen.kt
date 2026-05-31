@@ -66,7 +66,10 @@ fun RepertuarScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var query by remember { mutableStateOf("") }
-    val isEmployee = remember { TokenStore.getUserRole() == "EMPLOYEE" }
+    val isEmployee = remember {
+        val role = TokenStore.getUserRole()
+        role == "EMPLOYEE" || role == "ADMIN"
+    }
 
     Scaffold(
         topBar = {
