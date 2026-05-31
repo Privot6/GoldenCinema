@@ -67,7 +67,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/halls/*").hasRole("ADMIN")
                         .requestMatchers("/api/admin/screenings", "/api/admin/screenings/*").hasRole("ADMIN")
                         .requestMatchers("/api/admin/users", "/api/admin/users/*").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/stats").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/stats", "/api/admin/stats/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/reservations", "/api/admin/reservations/*").hasRole("ADMIN")
                         .requestMatchers("/api/admin/reports", "/api/admin/reports/**").hasRole("ADMIN")
                         .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")

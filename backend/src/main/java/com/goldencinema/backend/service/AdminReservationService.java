@@ -1,6 +1,7 @@
 package com.goldencinema.backend.service;
 
 import com.goldencinema.backend.dto.AdminReservationDto;
+import com.goldencinema.backend.dto.DailyRevenueDto;
 import com.goldencinema.backend.dto.PagedResponse;
 import com.goldencinema.backend.entity.Reservation;
 import com.goldencinema.backend.entity.ReservationStatus;
@@ -15,8 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Serwis administracyjny do zarządzania rezerwacjami.
@@ -99,6 +105,24 @@ public class AdminReservationService {
         reservation.setStatus(newStatus);
         reservation.setUpdatedAt(LocalDateTime.now());
         return toDto(reservationRepository.save(reservation));
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyRevenueDto> getDailyRevenue(LocalDateTime from) {
+        List<Object[]> rows = reservationRepository.getDailyRevenueRaw(from);
+
+        Map<String, BigDecimal> byDate = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            byDate.put((String) row[0], (BigDecimal) row[1]);
+        }
+
+        List<DailyRevenueDto> result = new ArrayList<>(7);
+        LocalDate today = LocalDate.now();
+        for (int i = 6; i >= 0; i--) {
+            String date = today.minusDays(i).toString();
+            result.add(new DailyRevenueDto(date, byDate.getOrDefault(date, BigDecimal.ZERO)));
+        }
+        return result;
     }
 
     private AdminReservationDto toDto(Reservation r) {

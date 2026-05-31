@@ -11,6 +11,12 @@ import {
 } from '@/components/ui/table'
 import { AlertCircle, Building2, CalendarClock, FileBarChart, RefreshCw, Ticket, TrendingUp, Users } from 'lucide-vue-next'
 import { RouterLink } from 'vue-router'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale, LinearScale, BarElement, Title, Tooltip
+} from 'chart.js'
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip)
 
 interface Movie { id: number; title: string }
 interface Hall  { id: number; name: string }
@@ -31,10 +37,14 @@ interface Stats {
   monthlyRevenue: number
 }
 
+interface DailyRevenue { date: string; revenue: number }
+
 const screenings = ref<Screening[]>([])
 const stats = ref<Stats | null>(null)
+const chartData = ref<DailyRevenue[]>([])
 const loading = ref(false)
 const statsLoading = ref(false)
+const chartLoading = ref(false)
 const error = ref('')
 
 const DASH_PAGE_SIZE = 10
@@ -95,7 +105,41 @@ async function fetchStats() {
   }
 }
 
-function fetchAll() { Promise.all([fetchScreenings(), fetchStats()]) }
+const chartDataset = computed(() => ({
+  labels: chartData.value.map(d => d.date),
+  datasets: [{
+    label: 'Przychód (PLN)',
+    data: chartData.value.map(d => d.revenue),
+    backgroundColor: 'hsl(var(--primary) / 0.8)'
+  }]
+}))
+
+const chartOptions = {
+  responsive: true,
+  plugins: { legend: { display: false } },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        callback: (value: string | number) => formatPrice(Number(value))
+      }
+    }
+  }
+}
+
+async function fetchRevenueChart() {
+  chartLoading.value = true
+  try {
+    const { data } = await api.get<DailyRevenue[]>('/admin/stats/revenue-chart')
+    chartData.value = data
+  } catch {
+    // non-fatal
+  } finally {
+    chartLoading.value = false
+  }
+}
+
+function fetchAll() { Promise.all([fetchScreenings(), fetchStats(), fetchRevenueChart()]) }
 
 onMounted(fetchAll)
 </script>
@@ -180,6 +224,23 @@ onMounted(fetchAll)
         </Card>
       </template>
     </div>
+
+    <!-- Revenue chart -->
+    <Card>
+      <CardHeader class="pb-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <CardTitle class="text-base">Przychód — ostatnie 7 dni</CardTitle>
+            <CardDescription>Potwierdzony przychód z rezerwacji</CardDescription>
+          </div>
+          <TrendingUp class="w-5 h-5 text-muted-foreground" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div v-if="chartLoading" class="h-48 rounded-md bg-secondary/50 animate-pulse" />
+        <Bar v-else :data="chartDataset" :options="(chartOptions as any)" class="max-h-64" />
+      </CardContent>
+    </Card>
 
     <Card>
       <CardHeader class="pb-3">
