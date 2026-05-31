@@ -42,7 +42,7 @@ object TokenStore {
 
     /** Zapisuje token JWT w zaszyfrowanych preferencjach. */
     fun save(token: String) {
-        prefs?.edit()?.putString(KEY_TOKEN, token)?.apply()
+        prefs?.edit()?.putString(KEY_TOKEN, token)?.commit()
     }
 
     /** Zwraca zapisany token JWT lub null jeśli brak tokenu. */
